@@ -1,5 +1,4 @@
-<div align="center">
-  <img src="et-frontend/public/favicon.ico" alt="Logo" width="80" height="80">
+
   <h1>ET Finance Mentor</h1>
   <p><strong>AI-Powered Personal Finance Planning for India</strong></p>
   <p>From confused saver to confident investor. Get holistic, automated financial planning including FIRE tracking, mutual fund X-rays, tax wizards, and money health scoring.</p>
