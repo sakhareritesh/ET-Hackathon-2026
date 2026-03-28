@@ -37,13 +37,13 @@ export const RISK_PROFILES = [
  * Life Event types
  */
 export const LIFE_EVENTS = [
-  { value: "bonus", label: "🎉 Bonus / Windfall", icon: "🎉" },
-  { value: "marriage", label: "💍 Marriage", icon: "💍" },
-  { value: "child_birth", label: "👶 Child Birth", icon: "👶" },
-  { value: "home_purchase", label: "🏠 Home Purchase", icon: "🏠" },
-  { value: "job_change", label: "💼 Job Change", icon: "💼" },
-  { value: "retirement", label: "🏖️ Retirement", icon: "🏖️" },
-  { value: "inheritance", label: "🎁 Inheritance", icon: "🎁" },
-  { value: "business_start", label: "🚀 Start Business", icon: "🚀" },
-  { value: "medical_emergency", label: "🏥 Medical Emergency", icon: "🏥" },
+  { value: "bonus", label: "Bonus / Windfall", icon: "Gift" },
+  { value: "marriage", label: "Marriage", icon: "Heart" },
+  { value: "child_birth", label: "Child Birth", icon: "Baby" },
+  { value: "home_purchase", label: "Home Purchase", icon: "Home" },
+  { value: "job_change", label: "Job Change", icon: "Briefcase" },
+  { value: "retirement", label: "Retirement", icon: "Palmtree" },
+  { value: "inheritance", label: "Inheritance", icon: "Package" },
+  { value: "business_start", label: "Start Business", icon: "Rocket" },
+  { value: "medical_emergency", label: "Medical Emergency", icon: "Hospital" },
 ];

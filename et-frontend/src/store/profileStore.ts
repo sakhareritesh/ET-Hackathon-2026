@@ -1,9 +1,6 @@
 import { create } from "zustand";
+import { supabase } from "@/lib/supabase";
 import { LOCAL_KEYS } from "@/lib/localKeys";
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                             */
-/* ------------------------------------------------------------------ */
 
 export interface FinancialProfile {
   employment_type: string;
@@ -23,27 +20,12 @@ export function getDefaultLocalProfile(): FinancialProfile {
     employment_type: "salaried",
     annual_income: { gross: 0, net: 0 },
     monthly_expenses: {
-      rent: 0,
-      emi: 0,
-      groceries: 0,
-      utilities: 0,
-      entertainment: 0,
-      education: 0,
-      other: 0,
-      total: 0,
+      rent: 0, emi: 0, groceries: 0, utilities: 0,
+      entertainment: 0, education: 0, other: 0, total: 0,
     },
     existing_investments: {
-      ppf: 0,
-      epf: 0,
-      nps: 0,
-      elss: 0,
-      fd: 0,
-      stocks: 0,
-      mutual_funds: 0,
-      real_estate: 0,
-      gold: 0,
-      crypto: 0,
-      other: 0,
+      ppf: 0, epf: 0, nps: 0, elss: 0, fd: 0,
+      stocks: 0, mutual_funds: 0, real_estate: 0, gold: 0, crypto: 0, other: 0,
     },
     debts: [],
     insurance: {
@@ -56,13 +38,9 @@ export function getDefaultLocalProfile(): FinancialProfile {
   };
 }
 
-/* ------------------------------------------------------------------ */
-/*  Helpers — sync API + localStorage                                 */
-/* ------------------------------------------------------------------ */
-
-function getUserId(): string {
-  if (typeof window === "undefined") return "default_local_user";
-  return localStorage.getItem("user_id") || "default_local_user";
+async function getUserId(): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.user?.id ?? null;
 }
 
 function writeLocal(profile: FinancialProfile) {
@@ -80,27 +58,6 @@ function readLocal(): FinancialProfile | null {
     return null;
   }
 }
-
-async function fetchFromDb(userId: string): Promise<FinancialProfile | null> {
-  const res = await fetch(`/api/profile/sync?user_id=${encodeURIComponent(userId)}`);
-  if (!res.ok) return null;
-  const json = await res.json();
-  if (json.found && json.profile) return json.profile as FinancialProfile;
-  return null;
-}
-
-async function saveToDb(userId: string, profile: FinancialProfile): Promise<boolean> {
-  const res = await fetch("/api/profile/sync", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId, ...profile }),
-  });
-  return res.ok;
-}
-
-/* ------------------------------------------------------------------ */
-/*  Store                                                             */
-/* ------------------------------------------------------------------ */
 
 interface ProfileState {
   profile: FinancialProfile | null;
@@ -120,25 +77,57 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
 
   fetchProfile: async () => {
     set({ isLoading: true });
-    const userId = getUserId();
+    const userId = await getUserId();
 
-    try {
-      const dbProfile = await fetchFromDb(userId);
-      if (dbProfile) {
-        writeLocal(dbProfile);
-        set({ profile: dbProfile, isLoading: false, dbConnected: true, lastSyncedAt: new Date().toISOString() });
-        return;
+    if (userId) {
+      try {
+        const { data: row } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", userId)
+          .single();
+
+        const { data: incomeRow } = await supabase
+          .from("income")
+          .select("*")
+          .eq("user_id", userId)
+          .single();
+
+        if (row) {
+          const profile: FinancialProfile = {
+            employment_type: row.employment_type || "salaried",
+            annual_income: {
+              gross: incomeRow?.gross_salary || 0,
+              net: (incomeRow?.gross_salary || 0) - (incomeRow?.gross_salary || 0) * 0.1,
+            },
+            monthly_expenses: incomeRow?.expense_breakdown || getDefaultLocalProfile().monthly_expenses,
+            salary_structure: {
+              basic: incomeRow?.basic_salary || 0,
+              hra: incomeRow?.hra_received || 0,
+              special_allowance: incomeRow?.special_allowance || 0,
+            },
+            existing_investments: getDefaultLocalProfile().existing_investments,
+            debts: [],
+            insurance: getDefaultLocalProfile().insurance,
+            emergency_fund: { current_amount: 0, months_covered: 0 },
+            risk_profile: row.risk_profile || "moderate",
+            tax_regime: row.tax_regime || "new",
+          };
+
+          const local = readLocal();
+          const merged = local ? { ...profile, ...local, annual_income: profile.annual_income.gross > 0 ? profile.annual_income : (local.annual_income ?? profile.annual_income) } : profile;
+
+          writeLocal(merged);
+          set({ profile: merged, isLoading: false, dbConnected: true, lastSyncedAt: new Date().toISOString() });
+          return;
+        }
+      } catch {
+        /* Supabase unavailable, fall through */
       }
-    } catch {
-      /* MongoDB unreachable — fall through to localStorage */
     }
 
     const local = readLocal();
-    if (local) {
-      set({ profile: local, isLoading: false, dbConnected: false });
-    } else {
-      set({ profile: null, isLoading: false, dbConnected: false });
-    }
+    set({ profile: local, isLoading: false, dbConnected: false });
   },
 
   saveProfile: async (data) => {
@@ -148,11 +137,34 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     writeLocal(merged);
     set({ profile: merged });
 
-    const userId = getUserId();
-    try {
-      const ok = await saveToDb(userId, merged);
-      set({ isLoading: false, dbConnected: ok, lastSyncedAt: ok ? new Date().toISOString() : get().lastSyncedAt });
-    } catch {
+    const userId = await getUserId();
+    if (userId) {
+      try {
+        await supabase.from("profiles").upsert({
+          id: userId,
+          employment_type: merged.employment_type,
+          risk_profile: merged.risk_profile,
+          tax_regime: merged.tax_regime,
+          updated_at: new Date().toISOString(),
+        });
+
+        await supabase.from("income").upsert({
+          user_id: userId,
+          gross_salary: merged.annual_income.gross,
+          basic_salary: merged.salary_structure?.basic || 0,
+          hra_received: merged.salary_structure?.hra || 0,
+          special_allowance: merged.salary_structure?.special_allowance || 0,
+          monthly_expenses: merged.monthly_expenses?.total || 0,
+          rent_paid: merged.monthly_expenses?.rent || 0,
+          expense_breakdown: merged.monthly_expenses,
+          updated_at: new Date().toISOString(),
+        });
+
+        set({ isLoading: false, dbConnected: true, lastSyncedAt: new Date().toISOString() });
+      } catch {
+        set({ isLoading: false, dbConnected: false });
+      }
+    } else {
       set({ isLoading: false, dbConnected: false });
     }
   },
@@ -162,14 +174,33 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     writeLocal(full);
     set({ profile: full });
 
-    const userId = getUserId();
-    try {
-      const ok = await saveToDb(userId, full);
-      if (!ok) throw new Error("DB write failed");
-      set({ isLoading: false, dbConnected: true, lastSyncedAt: new Date().toISOString() });
-    } catch {
+    const userId = await getUserId();
+    if (userId) {
+      try {
+        await supabase.from("profiles").upsert({
+          id: userId,
+          employment_type: full.employment_type,
+          risk_profile: full.risk_profile,
+          tax_regime: full.tax_regime,
+          updated_at: new Date().toISOString(),
+        });
+        await supabase.from("income").upsert({
+          user_id: userId,
+          gross_salary: full.annual_income.gross,
+          basic_salary: full.salary_structure?.basic || 0,
+          hra_received: full.salary_structure?.hra || 0,
+          special_allowance: full.salary_structure?.special_allowance || 0,
+          monthly_expenses: full.monthly_expenses?.total || 0,
+          rent_paid: full.monthly_expenses?.rent || 0,
+          expense_breakdown: full.monthly_expenses,
+          updated_at: new Date().toISOString(),
+        });
+        set({ isLoading: false, dbConnected: true, lastSyncedAt: new Date().toISOString() });
+      } catch {
+        set({ isLoading: false, dbConnected: false });
+      }
+    } else {
       set({ isLoading: false, dbConnected: false });
-      throw new Error("Profile saved locally but MongoDB sync failed. Check your MONGODB_URI in .env.local.");
     }
   },
 }));

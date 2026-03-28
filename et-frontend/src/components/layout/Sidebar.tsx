@@ -4,7 +4,8 @@ import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import {
   LayoutDashboard, Flame, Heart, Calendar, Calculator,
-  Users, PieChart, LogOut, X, ChevronRight, Wallet,
+  Users, PieChart, LogOut, X, ChevronRight, Wallet, FileText,
+  Sparkles, User,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -17,6 +18,8 @@ const navItems = [
   { href: "/tax-wizard", label: "Tax Wizard", icon: Calculator },
   { href: "/couples-planner", label: "Couples Planner", icon: Users },
   { href: "/mf-xray", label: "MF X-Ray", icon: PieChart },
+  { href: "/mentor", label: "AI Mentor", icon: Sparkles },
+  { href: "/reports", label: "Reports", icon: FileText },
 ];
 
 export default function Sidebar() {
@@ -75,10 +78,24 @@ export default function Sidebar() {
       {/* User & Logout */}
       <div className="p-4 border-t border-slate-700/50">
         {!collapsed && user && (
-          <div className="mb-3 px-3">
-            <p className="text-sm font-medium text-white truncate">{user.full_name}</p>
-            <p className="text-xs text-slate-500 truncate">{user.email}</p>
-          </div>
+          <Link href="/profile" className="block mb-3 px-3 rounded-xl py-2 hover:bg-slate-700/40 transition-colors cursor-pointer">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                {user.full_name?.charAt(0) || "U"}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-white truncate">{user.full_name}</p>
+                <p className="text-xs text-slate-500 truncate">{user.email}</p>
+              </div>
+            </div>
+          </Link>
+        )}
+        {collapsed && user && (
+          <Link href="/profile" className="flex items-center justify-center mb-3">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold">
+              {user.full_name?.charAt(0) || <User size={16} />}
+            </div>
+          </Link>
         )}
         <button
           onClick={logout}

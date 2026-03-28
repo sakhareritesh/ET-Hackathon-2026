@@ -1,82 +1,104 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "framer-motion";
 import {
-  Flame, Heart, Calendar, Calculator, Users, PieChart,
-  ArrowRight, Sparkles, Shield, TrendingUp, CheckCircle2,
+  Flame,
+  Heart,
+  Calculator,
+  PieChart,
+  Calendar,
+  Users,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
+import AnimatedCounter from "@/components/shared/AnimatedCounter";
+import { cn } from "@/lib/utils";
 
 const features = [
   {
-    title: "FIRE Path Planner",
-    desc: "Complete month-by-month financial roadmap with SIP amounts per goal, asset allocation shifts, insurance gaps, and tax-saving moves.",
-    icon: <Flame size={28} />,
-    gradient: "from-orange-500 to-red-500",
+    title: "FIRE Planner",
+    desc: "Month-by-month roadmap to financial independence with SIP targets, glide paths, and scenario planning.",
+    icon: Flame,
+    gradient: "from-orange-500 to-rose-600",
     href: "/fire-planner",
   },
   {
-    title: "Money Health Score",
-    desc: "5-minute onboarding gives a comprehensive score across emergency preparedness, insurance, investments, debt, tax, and retirement.",
-    icon: <Heart size={28} />,
+    title: "Money Health",
+    desc: "Holistic score across savings, debt, insurance, tax, and goals so you see the full picture.",
+    icon: Heart,
     gradient: "from-pink-500 to-rose-500",
     href: "/money-health",
   },
   {
-    title: "Life Event Advisor",
-    desc: "AI advisor for bonus, inheritance, marriage, new baby — customized to your tax bracket, portfolio, and goals.",
-    icon: <Calendar size={28} />,
-    gradient: "from-blue-500 to-indigo-500",
-    href: "/life-events",
-  },
-  {
     title: "Tax Wizard",
-    desc: "Upload Form 16 or input salary. AI finds every missed deduction, compares regimes, and suggests tax-saving investments.",
-    icon: <Calculator size={28} />,
+    desc: "Old vs new regime, missed deductions, and ranked tax-saving moves tailored to your salary structure.",
+    icon: Calculator,
     gradient: "from-amber-500 to-orange-500",
     href: "/tax-wizard",
   },
   {
-    title: "Couple's Money Planner",
-    desc: "India's first AI joint planner — HRA claims, NPS matching, SIP splits, joint vs individual insurance, combined net worth.",
-    icon: <Users size={28} />,
-    gradient: "from-violet-500 to-pink-500",
-    href: "/couples-planner",
+    title: "MF X-Ray",
+    desc: "Upload statements for XIRR, overlap, expense drag, and AI-assisted rebalancing ideas.",
+    icon: PieChart,
+    gradient: "from-violet-500 to-indigo-600",
+    href: "/mf-xray",
   },
   {
-    title: "MF Portfolio X-Ray",
-    desc: "Upload CAMS/KFintech statement for XIRR, overlap analysis, expense ratio drag, benchmark comparison, and AI rebalancing.",
-    icon: <PieChart size={28} />,
-    gradient: "from-violet-500 to-purple-500",
-    href: "/mf-xray",
+    title: "Life Events",
+    desc: "Bonus, inheritance, marriage, relocation modeled against your portfolio and tax bracket.",
+    icon: Calendar,
+    gradient: "from-sky-500 to-blue-600",
+    href: "/life-events",
+  },
+  {
+    title: "Couples Planner",
+    desc: "Joint net worth, HRA, NPS, SIP splits, and insurance designed for two incomes.",
+    icon: Users,
+    gradient: "from-fuchsia-500 to-violet-600",
+    href: "/couples-planner",
   },
 ];
 
-const stats = [
-  { value: "95%", label: "Indians lack a financial plan" },
-  { value: "₹25K+", label: "Yearly advisor cost you save" },
-  { value: "6", label: "AI-powered financial tools" },
-  { value: "< 5 min", label: "To get your Money Health Score" },
+const steps = [
+  { title: "Sign Up", body: "Create a free account in under a minute. No card, no sales calls." },
+  { title: "Complete Profile", body: "Tell us about income, goals, and risk so models stay personal." },
+  { title: "Get Your Plan", body: "See dashboards, alerts, and AI guidance tuned to Indian rules." },
 ];
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  show: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: 0.06 * i, duration: 0.5, ease: [0.22, 1, 0.36, 1] as const },
+  }),
+};
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 backdrop-blur-xl bg-slate-950/80 border-b border-slate-800/50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <nav className="sticky top-0 z-50 border-b border-slate-800/50 bg-slate-950/80 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center text-slate-900 font-black text-sm">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-400 text-sm font-black text-slate-900">
               ET
             </div>
-            <span className="text-lg font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-              Finance Mentor
+            <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-lg font-bold text-transparent">
+              DhanGuru
             </span>
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/login" className="text-sm text-slate-400 hover:text-white transition-colors">
+            <Link
+              href="/login"
+              className="text-sm text-slate-400 transition-colors hover:text-white"
+            >
               Sign In
             </Link>
-            <Link href="/register"
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-900 font-semibold text-sm
-                hover:shadow-lg hover:shadow-emerald-500/25 transition-all">
+            <Link
+              href="/register"
+              className="rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-4 py-2 text-sm font-semibold text-slate-900 transition-all hover:shadow-lg hover:shadow-emerald-500/25"
+            >
               Get Started Free
             </Link>
           </div>
@@ -85,131 +107,275 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 pt-20 pb-24 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-6">
+        <motion.div
+          className="pointer-events-none absolute inset-0"
+          aria-hidden
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.2 }}
+        >
+          <div className="absolute -left-1/4 top-0 h-[28rem] w-[28rem] rounded-full bg-emerald-500/20 blur-[120px]" />
+          <div className="absolute -right-1/4 top-24 h-[24rem] w-[24rem] rounded-full bg-cyan-500/15 blur-[100px]" />
+          <div className="absolute bottom-0 left-1/3 h-[20rem] w-[20rem] rounded-full bg-teal-500/10 blur-[90px]" />
+          <motion.div
+            className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(16,185,129,0.22),transparent)]"
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </motion.div>
+
+        <div className="relative mx-auto max-w-7xl px-6 pb-24 pt-20 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-4 py-1.5"
+          >
             <Sparkles size={14} className="text-emerald-400" />
-            <span className="text-xs text-emerald-400 font-medium">AI-Powered Financial Planning for India</span>
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-black max-w-4xl mx-auto leading-tight mb-6">
-            Turn Confused Savers Into{" "}
-            <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">
-              Confident Investors
+            <span className="text-xs font-medium text-emerald-400">
+              DhanGuru AI Money Mentor
             </span>
-          </h1>
+          </motion.div>
 
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Financial planning as accessible as checking WhatsApp. AI builds your complete
-            financial roadmap — investments, tax savings, insurance, and retirement — personalized to you.
-          </p>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.05 }}
+            className="mx-auto max-w-4xl text-5xl font-black leading-tight tracking-tight md:text-7xl"
+          >
+            Your AI Financial Advisor.{" "}
+            <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-teal-300 bg-clip-text text-transparent">
+              Free. Forever.
+            </span>
+          </motion.h1>
 
-          <div className="flex items-center justify-center gap-4">
-            <Link href="/register"
-              className="px-8 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-900 font-bold text-lg
-                hover:shadow-xl hover:shadow-emerald-500/30 transition-all flex items-center gap-2">
-              Start Free <ArrowRight size={20} />
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.12 }}
+            className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-slate-400"
+          >
+            95% of Indians don&apos;t have a financial plan. We&apos;re changing that.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mt-10 flex flex-wrap items-center justify-center gap-4"
+          >
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-8 py-3.5 text-lg font-bold text-slate-900 transition-all hover:shadow-xl hover:shadow-emerald-500/30"
+            >
+              Get Started Free
+              <ArrowRight size={20} />
             </Link>
-            <Link href="/money-health"
-              className="px-8 py-3.5 rounded-xl border border-slate-700 text-slate-300 font-medium text-lg
-                hover:bg-slate-800/60 hover:border-slate-600 transition-all">
-              Check Health Score
+            <Link
+              href="/money-health"
+              className="rounded-xl border border-slate-700 px-8 py-3.5 text-lg font-medium text-slate-300 transition-all hover:border-slate-600 hover:bg-slate-800/60"
+            >
+              Explore Tools
             </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Feature grid */}
+      <section className="relative border-y border-slate-800/50 bg-slate-900/20 py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.5 }}
+            className="mb-14 text-center"
+          >
+            <h2 className="mb-3 text-3xl font-black text-white md:text-4xl">
+              Six tools. One calm money brain.
+            </h2>
+            <p className="mx-auto max-w-xl text-lg text-slate-500">
+              Everything is built for Indian taxes, instruments, and real-life milestones.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {features.map((f, i) => (
+              <motion.div
+                key={f.title}
+                custom={i}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: "-40px" }}
+                variants={fadeUp}
+              >
+                <Link
+                  href={f.href}
+                  className={cn(
+                    "group flex h-full flex-col rounded-2xl border border-slate-700/50 bg-slate-800/30 p-6 transition-all duration-300",
+                    "hover:border-emerald-500/30 hover:bg-slate-800/60 hover:shadow-lg hover:shadow-emerald-500/5",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg",
+                      `bg-gradient-to-br ${f.gradient}`,
+                      "transition-transform group-hover:scale-110",
+                    )}
+                  >
+                    <f.icon size={28} strokeWidth={1.75} />
+                  </div>
+                  <h3 className="mb-2 text-lg font-bold text-white transition-colors group-hover:text-emerald-400">
+                    {f.title}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-slate-500">{f.desc}</p>
+                </Link>
+              </motion.div>
+            ))}
           </div>
         </div>
-        <div className="absolute top-20 left-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl" />
-        <div className="absolute top-40 right-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl" />
+      </section>
+
+      {/* How it works */}
+      <section className="py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.5 }}
+            className="mb-14 text-center"
+          >
+            <h2 className="mb-3 text-3xl font-black md:text-4xl">How it works</h2>
+            <p className="text-slate-500">Three steps from signup to a living financial plan.</p>
+          </motion.div>
+
+          <div className="grid gap-8 md:grid-cols-3">
+            {steps.map((s, i) => (
+              <motion.div
+                key={s.title}
+                custom={i}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                className="relative rounded-2xl border border-slate-700/50 bg-slate-800/40 p-8 backdrop-blur-sm"
+              >
+                <span className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 text-sm font-bold text-emerald-400 ring-1 ring-emerald-500/30">
+                  {i + 1}
+                </span>
+                <h3 className="mb-2 text-xl font-bold text-white">{s.title}</h3>
+                <p className="text-sm leading-relaxed text-slate-400">{s.body}</p>
+                {i < steps.length - 1 ? (
+                  <div
+                    className="absolute -right-4 top-1/2 hidden h-px w-8 -translate-y-1/2 bg-gradient-to-r from-emerald-500/50 to-transparent md:block lg:w-12"
+                    aria-hidden
+                  />
+                ) : null}
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* Stats */}
-      <section className="border-y border-slate-800/50 bg-slate-900/30">
-        <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
-          {stats.map((s) => (
-            <div key={s.label} className="text-center">
-              <p className="text-3xl font-black bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-                {s.value}
-              </p>
-              <p className="text-sm text-slate-500 mt-1">{s.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl md:text-4xl font-black text-white mb-3">
-            6 Powerful Financial Tools
-          </h2>
-          <p className="text-lg text-slate-500 max-w-xl mx-auto">
-            Everything you need to take control of your money, powered by AI
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((f) => (
-            <Link key={f.title} href={f.href}
-              className="group p-6 rounded-2xl bg-slate-800/30 border border-slate-700/50
-                hover:border-slate-600/50 hover:bg-slate-800/60 transition-all duration-300">
-              <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${f.gradient} flex items-center justify-center text-white mb-4
-                shadow-lg group-hover:scale-110 transition-transform`}>
-                {f.icon}
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2 group-hover:text-emerald-400 transition-colors">
-                {f.title}
-              </h3>
-              <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* Why Us */}
-      <section className="bg-slate-900/30 border-y border-slate-800/50">
-        <div className="max-w-7xl mx-auto px-6 py-20">
-          <h2 className="text-3xl font-black text-white text-center mb-12">Why ET Finance Mentor?</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <section className="border-y border-slate-800/50 bg-slate-900/40 py-16">
+        <div className="mx-auto max-w-7xl px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="mb-10 text-center"
+          >
+            <h2 className="text-2xl font-black md:text-3xl">Built for scale</h2>
+            <p className="mt-2 text-slate-500">Numbers that reflect real usage in simulations.</p>
+          </motion.div>
+          <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
             {[
-              { icon: <Shield size={24} />, title: "100% Personalized", desc: "AI tailors every recommendation to your income, tax bracket, risk profile, and goals." },
-              { icon: <TrendingUp size={24} />, title: "India-First Design", desc: "Built for Indian tax laws, instruments (PPF, NPS, ELSS), and financial realities." },
-              { icon: <CheckCircle2 size={24} />, title: "Actionable, Not Generic", desc: "Get specific SIP amounts, exact deduction sections, and month-by-month plans." },
-            ].map((item) => (
-              <div key={item.title} className="text-center">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto mb-4">
-                  {item.icon}
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
-                <p className="text-sm text-slate-500">{item.desc}</p>
-              </div>
+              {
+                node: (
+                  <AnimatedCounter
+                    value={47000}
+                    prefix="₹"
+                    className="text-4xl font-black tracking-tight text-white md:text-5xl"
+                  />
+                ),
+                label: "avg tax savings",
+              },
+              {
+                node: (
+                  <AnimatedCounter
+                    value={10000}
+                    suffix="+"
+                    className="text-4xl font-black tracking-tight text-white md:text-5xl"
+                  />
+                ),
+                label: "simulations run",
+              },
+              {
+                node: (
+                  <AnimatedCounter
+                    value={6}
+                    className="text-4xl font-black tracking-tight text-white md:text-5xl"
+                  />
+                ),
+                label: "financial dimensions",
+              },
+            ].map((stat, i) => (
+              <motion.div
+                key={stat.label}
+                custom={i}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                className="text-center"
+              >
+                <div className="font-black text-white">{stat.node}</div>
+                <p className="mt-2 text-sm font-medium uppercase tracking-wider text-slate-500">
+                  {stat.label}
+                </p>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="max-w-7xl mx-auto px-6 py-20 text-center">
-        <h2 className="text-4xl font-black text-white mb-4">
-          Ready to Take Control of Your Money?
-        </h2>
-        <p className="text-lg text-slate-500 mb-8 max-w-lg mx-auto">
-          Join thousands of Indians building their financial future with AI.
-        </p>
-        <Link href="/register"
-          className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500
-            text-slate-900 font-bold text-lg hover:shadow-xl hover:shadow-emerald-500/30 transition-all">
-          Get Started Free <ArrowRight size={20} />
-        </Link>
+      <section className="py-24">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="mx-auto max-w-4xl rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-slate-900/80 to-cyan-500/10 px-8 py-14 text-center"
+        >
+          <h2 className="text-3xl font-black text-white md:text-4xl">
+            Start free. Stay in control.
+          </h2>
+          <p className="mx-auto mt-4 max-w-lg text-slate-400">
+            Join DhanGuru and let AI translate your goals into a plan you can actually follow.
+          </p>
+          <Link
+            href="/register"
+            className="mt-8 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-10 py-4 text-lg font-bold text-slate-900 transition-all hover:shadow-xl hover:shadow-emerald-500/30"
+          >
+            Create your account
+            <ArrowRight size={20} />
+          </Link>
+        </motion.div>
       </section>
 
-      {/* Footer */}
       <footer className="border-t border-slate-800/50 bg-slate-900/30">
-        <div className="max-w-7xl mx-auto px-6 py-8 flex items-center justify-between">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center text-slate-900 font-black text-xs">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-400 text-xs font-black text-slate-900">
               ET
             </div>
-            <span className="text-sm text-slate-500">Finance Mentor © 2026</span>
+            <span className="text-sm text-slate-500">DhanGuru AI Money Mentor</span>
           </div>
-          <p className="text-xs text-slate-600">AI-Powered Personal Finance for India</p>
+          <p className="text-xs text-slate-600">Economic Times Hackathon 2026</p>
         </div>
       </footer>
     </div>

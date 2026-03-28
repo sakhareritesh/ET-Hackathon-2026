@@ -9,9 +9,12 @@ load_dotenv(_ENV_FILE)
 
 
 class Settings(BaseModel):
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    AI_PORT: int = int(os.getenv("AI_PORT", "5000"))
-    CORS_ORIGINS: list[str] = ["http://localhost:3000"]
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    AI_SERVICE_URL: str = os.getenv("AI_PORT", "http://127.0.0.1:8000")
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
 
 
 @lru_cache()
