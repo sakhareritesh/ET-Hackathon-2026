@@ -1,32 +1,34 @@
 import { NextRequest } from "next/server";
-import {
-  verifyToken,
-  createAccessToken,
-  createRefreshToken,
-} from "@/lib/jwt";
+import { getCollection } from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 
+/**
+ * With no JWT, "refresh" simply validates that the user_id still
+ * belongs to an existing user.  This keeps the endpoint alive so
+ * nothing breaks, but it does nothing token-related.
+ */
 export async function POST(req: NextRequest) {
   try {
-    const { refresh_token } = await req.json();
-    const payload = verifyToken(refresh_token);
-
-    if (payload.type !== "refresh") {
-      return Response.json(
-        { detail: "Invalid token type" },
-        { status: 401 }
-      );
+    const { user_id } = await req.json();
+    if (!user_id) {
+      return Response.json({ detail: "user_id required" }, { status: 400 });
     }
 
-    const userId = payload.sub;
+    const users = await getCollection("users");
+    const user = await users.findOne({ _id: new ObjectId(user_id) });
+
+    if (!user) {
+      return Response.json({ detail: "User not found" }, { status: 401 });
+    }
+
     return Response.json({
-      access_token: createAccessToken(userId),
-      refresh_token: createRefreshToken(userId),
-      token_type: "bearer",
-      user_id: userId,
+      user_id: user._id.toString(),
+      email: user.email,
+      full_name: user.full_name,
     });
   } catch {
     return Response.json(
-      { detail: "Invalid refresh token" },
+      { detail: "Invalid user id" },
       { status: 401 }
     );
   }

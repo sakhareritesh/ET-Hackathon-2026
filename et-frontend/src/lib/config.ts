@@ -1,9 +1,9 @@
 /**
- * When true (default), all finance features run in the browser with no backend.
- * Set NEXT_PUBLIC_USE_LOCAL_ENGINE=false to use the API routes instead.
+ * Local engine mode is strictly disabled.
+ * Everything hits the MongoDB backend now.
  */
 export function isLocalEngineMode(): boolean {
-  return process.env.NEXT_PUBLIC_USE_LOCAL_ENGINE !== "false";
+  return false;
 }
 
 export function getApiBaseUrl(): string {

@@ -2,10 +2,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/api";
-import { isLocalEngineMode } from "@/lib/config";
-import { computeCoupleOptimization, randomInviteCode } from "@/lib/engine/couples";
-import { getDefaultLocalProfile, useProfileStore } from "@/store/profileStore";
-import { LOCAL_KEYS } from "@/lib/localKeys";
 import { formatCurrency } from "@/lib/utils";
 import { Users, Send, Sparkles, Heart, TrendingUp, Shield, Wallet } from "lucide-react";
 
@@ -36,8 +32,6 @@ interface CoupleData {
 
 export default function CouplesPlannerPage() {
   useAuth();
-  const localMode = isLocalEngineMode();
-  const { fetchProfile } = useProfileStore();
   const [partnerEmail, setPartnerEmail] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [data, setData] = useState<CoupleData | null>(null);
@@ -45,16 +39,6 @@ export default function CouplesPlannerPage() {
   const [tab, setTab] = useState<"invite" | "accept" | "results">("invite");
 
   const sendInvite = async () => {
-    if (localMode) {
-      await fetchProfile();
-      const code = randomInviteCode();
-      localStorage.setItem(
-        LOCAL_KEYS.coupleInvite,
-        JSON.stringify({ code, partner_email: partnerEmail, created: Date.now() })
-      );
-      setInviteCode(code);
-      return;
-    }
     try {
       const res = await api.post<{ invite_code: string }>("/couples/invite", { partner_email: partnerEmail });
       setInviteCode(res.data.invite_code);
@@ -64,15 +48,6 @@ export default function CouplesPlannerPage() {
   };
 
   const acceptInvite = async () => {
-    if (localMode) {
-      const raw = localStorage.getItem(LOCAL_KEYS.coupleInvite);
-      const row = raw ? (JSON.parse(raw) as { code: string }) : null;
-      if (row?.code && inviteCode === row.code) {
-        localStorage.setItem(LOCAL_KEYS.coupleLinked, "1");
-      }
-      await fetchOptimizations();
-      return;
-    }
     try {
       await api.post("/couples/accept", { invite_code: inviteCode });
       await fetchOptimizations();
@@ -84,29 +59,6 @@ export default function CouplesPlannerPage() {
   const fetchOptimizations = async () => {
     setLoading(true);
     try {
-      if (localMode) {
-        await fetchProfile();
-        const self = useProfileStore.getState().profile;
-        const linked = localStorage.getItem(LOCAL_KEYS.coupleLinked) === "1";
-        const partnerProfile = linked
-          ? {
-              ...getDefaultLocalProfile(),
-              annual_income: { gross: 950000, net: 710000 },
-              tax_regime: "new",
-            }
-          : {
-              ...getDefaultLocalProfile(),
-              annual_income: { gross: 880000, net: 660000 },
-            };
-        const res = computeCoupleOptimization({
-          profileSelf: self,
-          profilePartner: partnerProfile,
-          partnerEmail,
-        });
-        setData(res);
-        setTab("results");
-        return;
-      }
       const res = await api.get<CoupleData>("/couples/optimize");
       setData(res.data);
       setTab("results");
@@ -128,9 +80,7 @@ export default function CouplesPlannerPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Couple&apos;s Money Planner</h1>
           <p className="text-sm text-slate-500">
-            {localMode
-              ? "Local demo: invite flow stores a code on this device; optimize uses your profile + a sample partner."
-              : "Joint planning with HRA, insurance, and net worth"}
+            Joint planning with HRA, insurance, and net worth
           </p>
         </div>
       </div>
@@ -159,9 +109,7 @@ export default function CouplesPlannerPage() {
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             <Heart size={18} className="text-pink-400" /> Invite Your Partner
           </h3>
-          <p className="text-sm text-slate-500">
-            Your partner needs an account. In local mode, the code is saved in this browser only.
-          </p>
+            Your partner needs an account to link profiles together.
           <div className="flex gap-3 flex-wrap">
             <input
               type="email"

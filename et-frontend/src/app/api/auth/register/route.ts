@@ -1,10 +1,6 @@
 import { NextRequest } from "next/server";
 import { getCollection } from "@/lib/mongodb";
-import {
-  hashPassword,
-  createAccessToken,
-  createRefreshToken,
-} from "@/lib/jwt";
+import { hashPassword } from "@/lib/jwt";
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,10 +44,9 @@ export async function POST(req: NextRequest) {
     const userId = result.insertedId.toString();
     return Response.json(
       {
-        access_token: createAccessToken(userId),
-        refresh_token: createRefreshToken(userId),
-        token_type: "bearer",
         user_id: userId,
+        email,
+        full_name,
       },
       { status: 201 }
     );
