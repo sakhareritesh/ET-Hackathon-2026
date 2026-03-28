@@ -33,12 +33,18 @@ export function getDefaultLocalProfile(): FinancialProfile {
 
 const DEFAULT_USER_ID = "000000000000000000000000";
 
-async function fetchFromDb(): Promise<FinancialProfile | null> {
-  const res = await fetch(`/api/profile/sync?user_id=${DEFAULT_USER_ID}`);
-  if (!res.ok) return null;
-  const json = await res.json();
-  if (json.found && json.profile) return json.profile as FinancialProfile;
-  return null;
+async function fetchFromDb(): Promise<{ connected: boolean; profile: FinancialProfile | null }> {
+  try {
+    const res = await fetch(`/api/profile/sync?user_id=${DEFAULT_USER_ID}`);
+    if (!res.ok) return { connected: false, profile: null };
+    const json = await res.json();
+    if (json.error) return { connected: false, profile: null };
+    if (json.found && json.profile) return { connected: true, profile: json.profile as FinancialProfile };
+    // DB responded OK but no profile exists yet — still connected
+    return { connected: true, profile: null };
+  } catch {
+    return { connected: false, profile: null };
+  }
 }
 
 async function saveToDb(profile: FinancialProfile): Promise<boolean> {
@@ -69,11 +75,12 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   fetchProfile: async () => {
     set({ isLoading: true });
     try {
-      const dbProfile = await fetchFromDb();
+      const { connected, profile: dbProfile } = await fetchFromDb();
       if (dbProfile) {
         set({ profile: dbProfile, isLoading: false, dbConnected: true, lastSyncedAt: new Date().toISOString() });
       } else {
-        set({ profile: null, isLoading: false, dbConnected: false });
+        // No profile yet, but mark connection status correctly
+        set({ profile: null, isLoading: false, dbConnected: connected });
       }
     } catch {
       set({ profile: null, isLoading: false, dbConnected: false });
@@ -97,12 +104,21 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   saveFullProfile: async (full) => {
     set({ isLoading: true, profile: full });
     try {
-      const ok = await saveToDb(full);
-      if (!ok) throw new Error("DB write failed");
+      const res = await fetch("/api/profile/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: DEFAULT_USER_ID, ...full }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error("Profile sync error:", err);
+        set({ isLoading: false, dbConnected: false });
+        return;
+      }
       set({ isLoading: false, dbConnected: true, lastSyncedAt: new Date().toISOString() });
-    } catch {
+    } catch (err) {
+      console.error("Profile sync failed:", err);
       set({ isLoading: false, dbConnected: false });
-      throw new Error("MongoDB sync failed. Check your connection.");
     }
   },
 }));

@@ -125,7 +125,7 @@ export default function MoneyProfilePage() {
 
   const syncLabel = dbConnected
     ? `Synced to MongoDB${lastSyncedAt ? ` · ${new Date(lastSyncedAt).toLocaleTimeString()}` : ""}`
-    : "Offline — saving to browser only";
+    : "Connecting to database…";
 
   if (!initialLoaded) {
     return (

@@ -1,24 +1,15 @@
 import { NextRequest } from "next/server";
+import { getCollection } from "@/lib/mongodb";
 
 /**
- * Profile sync endpoint — works without JWT auth.
+ * Profile sync endpoint — no auth required.
  *
- * Uses a simple `user_id` field (from localStorage in local-auth mode)
- * to key profiles in MongoDB.  Falls back to a fixed "default" user
- * when no id is supplied, so a single-user local setup just works.
+ * Uses a simple `user_id` string field to key profiles in MongoDB.
+ * Falls back to "default_local_user" when no id is supplied.
  *
  * GET  /api/profile/sync?user_id=xxx   → fetch profile
  * POST /api/profile/sync               → upsert profile { user_id, ...profile }
  */
-
-async function getCollection() {
-  const { MongoClient } = await import("mongodb");
-  const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/et_finance";
-  const dbName = process.env.MONGODB_DB_NAME || "et_finance";
-  const client = new MongoClient(uri, { maxPoolSize: 3 });
-  await client.connect();
-  return client.db(dbName).collection("financial_profiles");
-}
 
 function resolveUserId(raw: string | null | undefined): string {
   return typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : "default_local_user";
@@ -27,7 +18,7 @@ function resolveUserId(raw: string | null | undefined): string {
 export async function GET(req: NextRequest) {
   try {
     const userId = resolveUserId(req.nextUrl.searchParams.get("user_id"));
-    const col = await getCollection();
+    const col = await getCollection("financial_profiles");
     const doc = await col.findOne({ sync_user_id: userId });
 
     if (!doc) {
@@ -53,7 +44,7 @@ export async function POST(req: NextRequest) {
     const userId = resolveUserId(user_id as string | undefined);
     const now = new Date();
 
-    const col = await getCollection();
+    const col = await getCollection("financial_profiles");
     const existing = await col.findOne({ sync_user_id: userId });
 
     if (existing) {
