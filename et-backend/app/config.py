@@ -1,41 +1,17 @@
-from pydantic_settings import BaseSettings
+from pydantic import BaseModel
 from functools import lru_cache
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
-# Resolve .env from project root (two levels up from this file: app/config.py -> et-backend -> ET)
 _ENV_FILE = Path(__file__).resolve().parent.parent.parent / ".env"
+load_dotenv(_ENV_FILE)
 
 
-class Settings(BaseSettings):
-    # App
-    APP_NAME: str = "ET Finance Mentor API"
-    APP_VERSION: str = "1.0.0"
-    DEBUG: bool = False
-
-    # MongoDB
-    MONGODB_URI: str = "mongodb+srv://<user>:<password>@cluster.mongodb.net/"
-    MONGODB_DB_NAME: str = "et_finance"
-
-    # JWT
-    JWT_SECRET_KEY: str = "your-secret-key-change-in-production"
-    JWT_ALGORITHM: str = "HS256"
-    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-
-    # AI
-    GEMINI_API_KEY: str = ""
-    OPENAI_API_KEY: str = ""
-    AI_PROVIDER: str = "gemini"  # "gemini" | "openai"
-
-    # CORS
+class Settings(BaseModel):
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    AI_PORT: int = int(os.getenv("AI_PORT", "5000"))
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
-
-    # File Upload
-    MAX_UPLOAD_SIZE_MB: int = 10
-
-    class Config:
-        env_file = str(_ENV_FILE)
-        env_file_encoding = "utf-8"
 
 
 @lru_cache()

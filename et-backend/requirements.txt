@@ -1,43 +1,10 @@
 # Core
 fastapi==0.115.0
-uvicorn[standard]==0.30.6
+uvicorn==0.30.6
 python-dotenv==1.0.1
 
-# Database
-motor==3.5.1
-pymongo==4.8.0
-beanie==1.26.0
-
-# Auth
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-python-multipart==0.0.9
-
-# AI/ML
+# AI
 google-generativeai==0.7.2
-langchain==0.3.0
-langchain-google-genai==2.0.0
-openai==1.45.0
 
-# File Parsing
-PyPDF2==3.0.1
-tabula-py==2.9.3
-pandas==2.2.2
-openpyxl==3.1.5
-
-# Validation & Serialization
+# Validation
 pydantic==2.9.1
-pydantic-settings==2.5.2
-email-validator==2.2.0
-
-# Utilities
-httpx==0.27.2
-aiofiles==24.1.0
-python-dateutil==2.9.0
-
-# Testing
-pytest==8.3.3
-pytest-asyncio==0.24.0
-
-# Rate Limiting
-slowapi==0.1.9

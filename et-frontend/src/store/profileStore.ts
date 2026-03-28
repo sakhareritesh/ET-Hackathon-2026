@@ -105,7 +105,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
         set({ profile: next, isLoading: false });
         return;
       }
-      const res = await api.post<FinancialProfile>("/profile/onboarding", data);
+      const res = await api.post<FinancialProfile>("/profile", data);
       set({ profile: res.data, isLoading: false });
     } catch {
       set({ isLoading: false });
