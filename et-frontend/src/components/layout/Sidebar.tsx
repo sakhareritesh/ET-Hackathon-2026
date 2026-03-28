@@ -4,12 +4,13 @@ import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import {
   LayoutDashboard, Flame, Heart, Calendar, Calculator,
-  Users, PieChart, LogOut, X, ChevronRight,
+  Users, PieChart, LogOut, X, ChevronRight, Wallet,
 } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/money-profile", label: "Money Profile", icon: Wallet },
   { href: "/fire-planner", label: "FIRE Planner", icon: Flame },
   { href: "/money-health", label: "Money Health", icon: Heart },
   { href: "/life-events", label: "Life Events", icon: Calendar },

@@ -85,6 +85,46 @@ input[type="number"] {
   animation: pulse-glow 3s ease-in-out infinite;
 }
 
+/* FIRE planner — generation pipeline */
+@keyframes fire-gen-orbit {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fire-gen-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+.fire-gen-ring {
+  animation: fire-gen-orbit 2.2s linear infinite;
+}
+.fire-gen-core {
+  animation: fire-gen-pulse 1.2s ease-in-out infinite;
+}
+@keyframes result-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-result-reveal {
+  animation: result-reveal 0.55s ease-out forwards;
+}
+
 /* ===== Glass Card ===== */
 .glass-card {
   background: rgba(15, 23, 42, 0.5);

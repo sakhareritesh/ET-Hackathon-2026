@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useFirePlannerStore } from "@/store/firePlannerStore";
 import { useProfileStore } from "@/store/profileStore";
@@ -18,11 +19,22 @@ import {
   Wallet,
   BookOpen,
   Table,
-  Download,
   ChevronDown,
   ChevronUp,
   RefreshCw,
+  Loader2,
+  Circle,
+  CheckCircle2,
 } from "lucide-react";
+
+const FIRE_PIPELINE_STEPS = [
+  "Reading income, corpus, and life goals…",
+  "Inflating expenses to your retirement age…",
+  "Computing FIRE corpus (safe withdrawal rule)…",
+  "Solving goal SIPs with horizon-matched returns (PMT)…",
+  "Simulating glide path month-by-month…",
+  "Preparing your roadmap & summary…",
+] as const;
 
 interface GoalInput {
   name: string;
@@ -47,6 +59,11 @@ export default function FirePlannerPage() {
   const { plan, isGenerating, generatePlan } = useFirePlannerStore();
   const { profile, fetchProfile } = useProfileStore();
   const [guideOpen, setGuideOpen] = useState(true);
+  const [pipelineActive, setPipelineActive] = useState(false);
+  const [pipelineStep, setPipelineStep] = useState(0);
+  const [resultVisible, setResultVisible] = useState(false);
+  const [resultKey, setResultKey] = useState(0);
+  const [syncMsg, setSyncMsg] = useState<{ type: "ok" | "warn"; text: string } | null>(null);
 
   const [form, setForm] = useState({
     age: 28,
@@ -81,16 +98,45 @@ export default function FirePlannerPage() {
     void fetchProfile();
   }, [fetchProfile]);
 
-  const fillFromProfile = () => {
-    const d = fireDefaultsFromProfile(profile);
-    if (!d) return;
-    setForm((f) => ({
-      ...f,
-      existing_corpus: d.existing_corpus > 0 ? d.existing_corpus : f.existing_corpus,
-      monthly_expenses: d.monthly_expenses > 0 ? d.monthly_expenses : f.monthly_expenses,
-      monthly_income: d.monthly_income > 0 ? d.monthly_income : f.monthly_income,
-      expected_return_rate: d.expected_return_rate,
-    }));
+  useEffect(() => {
+    if (useFirePlannerStore.getState().plan) setResultVisible(true);
+  }, []);
+
+  const [isFilling, setIsFilling] = useState(false);
+
+  const fillFromProfile = async () => {
+    setIsFilling(true);
+    setSyncMsg(null);
+    try {
+      await fetchProfile();
+      const store = useProfileStore.getState();
+      const p = store.profile;
+      const d = fireDefaultsFromProfile(p);
+      if (!d || (d.existing_corpus <= 0 && d.monthly_expenses <= 0 && d.monthly_income <= 0)) {
+        setSyncMsg({
+          type: "warn",
+          text: "Money Profile is empty or not saved yet. Open Money Profile, fill the form, and save — then try again.",
+        });
+        return;
+      }
+      setForm((f) => ({
+        ...f,
+        existing_corpus: d.existing_corpus > 0 ? d.existing_corpus : f.existing_corpus,
+        monthly_expenses: d.monthly_expenses > 0 ? d.monthly_expenses : f.monthly_expenses,
+        monthly_income: d.monthly_income > 0 ? d.monthly_income : f.monthly_income,
+        expected_return_rate: d.expected_return_rate,
+      }));
+      const src = store.dbConnected ? "MongoDB" : "local storage";
+      setSyncMsg({
+        type: "ok",
+        text: `Pulled corpus ${formatCurrency(d.existing_corpus)}, income ₹${d.monthly_income.toLocaleString("en-IN")}/mo & expenses ₹${d.monthly_expenses.toLocaleString("en-IN")}/mo from ${src}. Edit any field before generating.`,
+      });
+      setTimeout(() => setSyncMsg(null), 6000);
+    } catch {
+      setSyncMsg({ type: "warn", text: "Failed to fetch profile. Check your connection and try again." });
+    } finally {
+      setIsFilling(false);
+    }
   };
 
   const addGoal = () => setGoals((g) => [...g, emptyGoal()]);
@@ -108,7 +154,28 @@ export default function FirePlannerPage() {
   };
 
   const handleGenerate = async () => {
-    await generatePlan({ ...form, goals });
+    const hadPlan = !!useFirePlannerStore.getState().plan;
+    setResultVisible(false);
+    setPipelineActive(true);
+    setPipelineStep(0);
+    const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    try {
+      for (let i = 0; i < FIRE_PIPELINE_STEPS.length; i++) {
+        setPipelineStep(i);
+        await delay(480 + i * 40);
+      }
+      setPipelineStep(FIRE_PIPELINE_STEPS.length);
+      await delay(320);
+      await generatePlan({ ...form, goals });
+      setResultKey((k) => k + 1);
+      setResultVisible(true);
+    } catch {
+      setSyncMsg({ type: "warn", text: "Could not generate plan. Check inputs and try again." });
+      if (hadPlan) setResultVisible(true);
+    } finally {
+      setPipelineActive(false);
+      setPipelineStep(0);
+    }
   };
 
   return (
@@ -159,15 +226,36 @@ export default function FirePlannerPage() {
           <button
             type="button"
             onClick={fillFromProfile}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-500/25 transition-all"
+            disabled={isFilling}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-500/25 transition-all disabled:opacity-50"
           >
-            <RefreshCw size={14} />
-            Fill from Money Profile
+            {isFilling ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+            {isFilling ? "Fetching from DB…" : "Fill from Money Profile"}
           </button>
         </div>
         <p className="text-xs text-slate-500 -mt-2">
-          Corpus auto-logic: emergency fund + all investment buckets from your saved profile (you can edit after fill).
+          Corpus = emergency fund + all investment buckets from{" "}
+          <Link href="/money-profile" className="text-emerald-400 hover:underline">
+            Money Profile
+          </Link>
+          . Save there first, then fill here.
         </p>
+        {syncMsg && (
+          <div
+            className={`p-3 rounded-xl text-sm flex flex-wrap items-center gap-2 ${
+              syncMsg.type === "ok"
+                ? "bg-emerald-500/10 border border-emerald-500/25 text-emerald-200/90"
+                : "bg-amber-500/10 border border-amber-500/25 text-amber-200/90"
+            }`}
+          >
+            {syncMsg.text}
+            {syncMsg.type === "warn" && (
+              <Link href="/money-profile" className="text-white font-medium underline shrink-0">
+                Open Money Profile
+              </Link>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
@@ -378,21 +466,68 @@ export default function FirePlannerPage() {
         <button
           type="button"
           onClick={handleGenerate}
-          disabled={isGenerating}
+          disabled={isGenerating || pipelineActive}
           className="px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold
             flex items-center gap-2 hover:shadow-lg hover:shadow-orange-500/25 transition-all disabled:opacity-50"
         >
-          {isGenerating ? (
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          {pipelineActive || isGenerating ? (
+            <Loader2 size={18} className="animate-spin" />
           ) : (
             <Sparkles size={18} />
           )}
-          {isGenerating ? "Generating plan…" : "Generate FIRE plan"}
+          {pipelineActive ? "Working…" : isGenerating ? "Finalising…" : "Generate FIRE plan"}
         </button>
       </div>
 
-      {plan && (
-        <div className="space-y-6">
+      {pipelineActive && (
+        <div
+          className="relative overflow-hidden rounded-2xl border border-orange-500/35 bg-slate-900/90 p-8 md:p-10 shadow-xl shadow-orange-500/10"
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-red-600/5 fire-gen-core" />
+          <div className="relative flex flex-col items-center text-center">
+            <div className="relative w-28 h-28 mb-8">
+              <div className="absolute inset-0 rounded-full border-2 border-dashed border-orange-400/50 fire-gen-ring opacity-80" />
+              <div className="absolute inset-4 rounded-full bg-gradient-to-br from-orange-500/40 to-red-600/25 flex items-center justify-center border border-orange-400/20">
+                <Flame className="text-orange-300 w-12 h-12 drop-shadow-lg" />
+              </div>
+            </div>
+            <p className="text-lg font-semibold text-orange-200 mb-1">Building your plan</p>
+            <p className="text-xs text-slate-500 mb-8 max-w-md">
+              Deterministic financial engine: inflation, SWR-based FIRE target, goal PMTs, glide path, then roadmap sampling.
+            </p>
+            <ul className="text-left max-w-lg w-full space-y-3">
+              {FIRE_PIPELINE_STEPS.map((label, i) => {
+                const done = i < pipelineStep;
+                const active = i === pipelineStep;
+                return (
+                  <li
+                    key={label}
+                    className={`flex items-start gap-3 text-sm transition-all duration-500 ${
+                      done ? "text-emerald-400/95" : active ? "text-white" : "text-slate-600"
+                    }`}
+                  >
+                    <span className="mt-0.5 shrink-0">
+                      {done ? (
+                        <CheckCircle2 size={18} className="text-emerald-400" />
+                      ) : active ? (
+                        <Loader2 size={18} className="animate-spin text-orange-400" />
+                      ) : (
+                        <Circle size={18} className="text-slate-600" />
+                      )}
+                    </span>
+                    <span className={active ? "font-medium" : ""}>{label}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {plan && resultVisible && (
+        <div key={resultKey} className="space-y-6 animate-result-reveal">
           <h3 className="text-xl font-bold text-white">Your FIRE plan</h3>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
