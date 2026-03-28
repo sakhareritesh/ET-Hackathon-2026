@@ -2,25 +2,17 @@ import { NextRequest } from "next/server";
 import { ObjectId } from "mongodb";
 import { getCollection } from "@/lib/mongodb";
 import { getCurrentUser, unauthorized } from "@/lib/jwt";
-import { callAI } from "@/lib/ai-proxy";
+import { computeTaxAnalysis, type TaxAnalyzePayload } from "@/lib/engine/tax";
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser(req);
   if (!user) return unauthorized();
 
   try {
-    const data = await req.json();
+    const data = (await req.json()) as TaxAnalyzePayload;
 
-    const profiles = await getCollection("financial_profiles");
-    const profile = await profiles.findOne({ user_id: new ObjectId(user._id) });
-    const riskProfile = profile?.risk_profile || "moderate";
-
-    const aiResult = await callAI("/ai/tax/analyze", {
-      ...data,
-      risk_profile: riskProfile,
-    });
-
-    const result = aiResult as Record<string, unknown>;
+    // Run tax calculation directly — no external AI backend needed
+    const result = computeTaxAnalysis(data);
 
     // Save to DB
     const taxRecords = await getCollection("tax_records");
@@ -48,9 +40,8 @@ export async function POST(req: NextRequest) {
     );
 
     return Response.json({
-      id: user._id.toString(),
-      financial_year: data.financial_year || "2025-26",
       ...result,
+      id: user._id.toString(),
     });
   } catch (err) {
     return Response.json(
