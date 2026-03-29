@@ -27,7 +27,7 @@ export async function getCurrentUser(req: NextRequest) {
   try {
     const users = await getCollection("users");
     let user = await users.findOne({ _id: new ObjectId(userId) });
-    
+
     // Auto-create default user if it doesn't exist
     if (!user && userId === DEFAULT_USER_ID) {
       await users.insertOne({
@@ -36,11 +36,11 @@ export async function getCurrentUser(req: NextRequest) {
         full_name: "Guest User",
         password_hash: hashPassword("password"), // dummy password
         created_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
       });
       user = await users.findOne({ _id: new ObjectId(DEFAULT_USER_ID) });
     }
-    
+
     return user;
   } catch {
     return null;
@@ -50,6 +50,6 @@ export async function getCurrentUser(req: NextRequest) {
 export function unauthorized() {
   return Response.json(
     { detail: "Not authenticated — missing or invalid user id" },
-    { status: 401 }
+    { status: 401 },
   );
 }

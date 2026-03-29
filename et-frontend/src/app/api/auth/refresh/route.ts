@@ -27,9 +27,6 @@ export async function POST(req: NextRequest) {
       full_name: user.full_name,
     });
   } catch {
-    return Response.json(
-      { detail: "Invalid user id" },
-      { status: 401 }
-    );
+    return Response.json({ detail: "Invalid user id" }, { status: 401 });
   }
 }

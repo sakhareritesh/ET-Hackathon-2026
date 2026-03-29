@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     if (!email || !password || password.length < 8 || !full_name) {
       return Response.json(
         { detail: "Email, password (min 8 chars), and full_name are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     if (existing) {
       return Response.json(
         { detail: "Email already registered" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -48,12 +48,9 @@ export async function POST(req: NextRequest) {
         email,
         full_name,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (err) {
-    return Response.json(
-      { detail: (err as Error).message },
-      { status: 500 }
-    );
+    return Response.json({ detail: (err as Error).message }, { status: 500 });
   }
 }

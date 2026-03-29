@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import api from "@/lib/api";
-import { type TaxAnalyzePayload, type TaxAnalysisResult } from "@/lib/engine/tax";
+import {
+  type TaxAnalyzePayload,
+  type TaxAnalysisResult,
+} from "@/lib/engine/tax";
 
 export interface TaxHistoryEntry {
   id: number;
@@ -21,7 +24,10 @@ interface TaxWizardState {
   history: TaxHistoryEntry[];
   analyze: (data: Record<string, unknown>) => Promise<void>;
   uploadForm16: (file: File) => Promise<Record<string, unknown>>;
-  saveToHistory: (income: Record<string, unknown>, deductions: Record<string, unknown>) => void;
+  saveToHistory: (
+    income: Record<string, unknown>,
+    deductions: Record<string, unknown>,
+  ) => void;
   loadHistory: () => void;
 }
 
@@ -32,7 +38,8 @@ function parseCSVForm16(text: string): {
   message?: string;
 } {
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
-  if (lines.length < 2) return { parsed: false, message: "CSV is too short to parse." };
+  if (lines.length < 2)
+    return { parsed: false, message: "CSV is too short to parse." };
 
   const fieldMap: Record<string, [string, string, string?]> = {
     "gross salary": ["income", "gross_salary"],
@@ -43,20 +50,36 @@ function parseCSVForm16(text: string): {
     city: ["income", "is_metro"],
     "professional tax": ["income", "professional_tax"],
     "other income": ["income", "income_from_other_sources"],
-    "epf": ["deductions", "epf", "section_80c"],
+    epf: ["deductions", "epf", "section_80c"],
     "epf (80c)": ["deductions", "epf", "section_80c"],
-    "ppf": ["deductions", "ppf", "section_80c"],
+    ppf: ["deductions", "ppf", "section_80c"],
     "ppf (80c)": ["deductions", "ppf", "section_80c"],
-    "elss": ["deductions", "elss", "section_80c"],
+    elss: ["deductions", "elss", "section_80c"],
     "elss (80c)": ["deductions", "elss", "section_80c"],
     "life insurance": ["deductions", "life_insurance", "section_80c"],
     "life insurance (80c)": ["deductions", "life_insurance", "section_80c"],
     "health insurance self": ["deductions", "self_premium", "section_80d"],
-    "health insurance self (80d)": ["deductions", "self_premium", "section_80d"],
-    "health insurance parents": ["deductions", "parents_premium", "section_80d"],
-    "preventive health checkup": ["deductions", "preventive_health", "section_80d"],
-    "preventive health checkup (80d)": ["deductions", "preventive_health", "section_80d"],
-    "nps": ["deductions", "nps_80ccd_1b"],
+    "health insurance self (80d)": [
+      "deductions",
+      "self_premium",
+      "section_80d",
+    ],
+    "health insurance parents": [
+      "deductions",
+      "parents_premium",
+      "section_80d",
+    ],
+    "preventive health checkup": [
+      "deductions",
+      "preventive_health",
+      "section_80d",
+    ],
+    "preventive health checkup (80d)": [
+      "deductions",
+      "preventive_health",
+      "section_80d",
+    ],
+    nps: ["deductions", "nps_80ccd_1b"],
     "nps 80ccd1b": ["deductions", "nps_80ccd_1b"],
     "nps 80ccd(1b)": ["deductions", "nps_80ccd_1b"],
     "home loan interest": ["deductions", "home_loan_interest_24b"],
@@ -76,7 +99,10 @@ function parseCSVForm16(text: string): {
   for (const line of lines.slice(1)) {
     const match = line.match(/^(.+?)[,\t](.+)$/);
     if (!match) continue;
-    const rawField = match[1].trim().toLowerCase().replace(/[_\-]+/g, " ");
+    const rawField = match[1]
+      .trim()
+      .toLowerCase()
+      .replace(/[_\-]+/g, " ");
     const rawValue = match[2].trim();
 
     const mapping = fieldMap[rawField];
@@ -85,7 +111,9 @@ function parseCSVForm16(text: string): {
     const [target, key, sub] = mapping;
 
     if (key === "is_metro") {
-      income.is_metro = rawValue.toLowerCase().includes("metro") && !rawValue.toLowerCase().includes("non");
+      income.is_metro =
+        rawValue.toLowerCase().includes("metro") &&
+        !rawValue.toLowerCase().includes("non");
       continue;
     }
 
@@ -103,8 +131,14 @@ function parseCSVForm16(text: string): {
     }
   }
 
-  if (Object.keys(income).length === 0 && Object.keys(section_80c).length === 0) {
-    return { parsed: false, message: "Could not recognize CSV fields. Please use the sample format." };
+  if (
+    Object.keys(income).length === 0 &&
+    Object.keys(section_80c).length === 0
+  ) {
+    return {
+      parsed: false,
+      message: "Could not recognize CSV fields. Please use the sample format.",
+    };
   }
 
   const total80c = Object.values(section_80c).reduce((s, v) => s + v, 0);
@@ -139,7 +173,9 @@ export const useTaxWizardStore = create<TaxWizardState>((set, get) => ({
 
   uploadForm16: async (file) => {
     // For CSV files, parse locally (no backend needed)
-    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    const isPdf =
+      file.type === "application/pdf" ||
+      file.name.toLowerCase().endsWith(".pdf");
     if (!isPdf) {
       const text = await file.text();
       const result = parseCSVForm16(text);
@@ -148,7 +184,10 @@ export const useTaxWizardStore = create<TaxWizardState>((set, get) => ({
     // For PDFs, send to backend stub
     const formData = new FormData();
     formData.append("file", file);
-    const res = await api.post<Record<string, unknown>>("/tax/upload-form16", formData);
+    const res = await api.post<Record<string, unknown>>(
+      "/tax/upload-form16",
+      formData,
+    );
     return res.data;
   },
 

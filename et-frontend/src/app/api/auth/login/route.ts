@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     if (!user || !verifyPassword(password, user.password_hash)) {
       return Response.json(
         { detail: "Invalid email or password" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -22,9 +22,6 @@ export async function POST(req: NextRequest) {
       full_name: user.full_name,
     });
   } catch (err) {
-    return Response.json(
-      { detail: (err as Error).message },
-      { status: 500 }
-    );
+    return Response.json({ detail: (err as Error).message }, { status: 500 });
   }
 }

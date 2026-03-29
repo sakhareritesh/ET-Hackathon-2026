@@ -26,7 +26,15 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-const EXP_KEYS = ["rent", "emi", "groceries", "utilities", "entertainment", "education", "other"] as const;
+const EXP_KEYS = [
+  "rent",
+  "emi",
+  "groceries",
+  "utilities",
+  "entertainment",
+  "education",
+  "other",
+] as const;
 const INV_KEYS = [
   "ppf",
   "epf",
@@ -47,8 +55,17 @@ function sumExpenses(m: FinancialProfile["monthly_expenses"]): number {
 
 export default function MoneyProfilePage() {
   useAuth();
-  const { profile, fetchProfile, saveFullProfile, isLoading, dbConnected, lastSyncedAt } = useProfileStore();
-  const [draft, setDraft] = useState<FinancialProfile>(getDefaultLocalProfile());
+  const {
+    profile,
+    fetchProfile,
+    saveFullProfile,
+    isLoading,
+    dbConnected,
+    lastSyncedAt,
+  } = useProfileStore();
+  const [draft, setDraft] = useState<FinancialProfile>(
+    getDefaultLocalProfile(),
+  );
   const [savedFlash, setSavedFlash] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -63,12 +80,29 @@ export default function MoneyProfilePage() {
       setDraft({
         ...getDefaultLocalProfile(),
         ...profile,
-        annual_income: { ...getDefaultLocalProfile().annual_income, ...profile.annual_income },
-        monthly_expenses: { ...getDefaultLocalProfile().monthly_expenses, ...profile.monthly_expenses },
-        existing_investments: { ...getDefaultLocalProfile().existing_investments, ...profile.existing_investments },
-        emergency_fund: { ...getDefaultLocalProfile().emergency_fund, ...profile.emergency_fund },
+        annual_income: {
+          ...getDefaultLocalProfile().annual_income,
+          ...profile.annual_income,
+        },
+        monthly_expenses: {
+          ...getDefaultLocalProfile().monthly_expenses,
+          ...profile.monthly_expenses,
+        },
+        existing_investments: {
+          ...getDefaultLocalProfile().existing_investments,
+          ...profile.existing_investments,
+        },
+        emergency_fund: {
+          ...getDefaultLocalProfile().emergency_fund,
+          ...profile.emergency_fund,
+        },
         insurance: {
-          life: { has_cover: false, sum_assured: 0, premium: 0, ...profile.insurance?.life },
+          life: {
+            has_cover: false,
+            sum_assured: 0,
+            premium: 0,
+            ...profile.insurance?.life,
+          },
           health: {
             has_cover: false,
             sum_assured: 0,
@@ -82,17 +116,23 @@ export default function MoneyProfilePage() {
     }
   }, [profile]);
 
-  const expenseSubtotal = useMemo(() => sumExpenses(draft.monthly_expenses), [draft.monthly_expenses]);
+  const expenseSubtotal = useMemo(
+    () => sumExpenses(draft.monthly_expenses),
+    [draft.monthly_expenses],
+  );
   const investable = useMemo(() => investableCorpusFromProfile(draft), [draft]);
   const complete = useMemo(() => profileCompleteness(draft), [draft]);
 
-  const updateExpense = useCallback((key: (typeof EXP_KEYS)[number], v: number) => {
-    setDraft((d) => {
-      const monthly_expenses = { ...d.monthly_expenses, [key]: v };
-      monthly_expenses.total = sumExpenses(monthly_expenses);
-      return { ...d, monthly_expenses };
-    });
-  }, []);
+  const updateExpense = useCallback(
+    (key: (typeof EXP_KEYS)[number], v: number) => {
+      setDraft((d) => {
+        const monthly_expenses = { ...d.monthly_expenses, [key]: v };
+        monthly_expenses.total = sumExpenses(monthly_expenses);
+        return { ...d, monthly_expenses };
+      });
+    },
+    [],
+  );
 
   const updateInv = useCallback((key: (typeof INV_KEYS)[number], v: number) => {
     setDraft((d) => ({
@@ -104,7 +144,10 @@ export default function MoneyProfilePage() {
   const handleSave = async () => {
     setError(null);
     setIsSaving(true);
-    const monthly_expenses = { ...draft.monthly_expenses, total: expenseSubtotal };
+    const monthly_expenses = {
+      ...draft.monthly_expenses,
+      total: expenseSubtotal,
+    };
     const toSave: FinancialProfile = { ...draft, monthly_expenses };
     try {
       await saveFullProfile(toSave);
@@ -149,8 +192,9 @@ export default function MoneyProfilePage() {
           <div>
             <h1 className="text-2xl font-bold text-white">Money Profile</h1>
             <p className="text-sm text-slate-500 max-w-xl">
-              Your single source of truth — income, spending, investments, safety nets.
-              Saved to MongoDB in real time. Used by FIRE planner, Money Health, and couple tools.
+              Your single source of truth — income, spending, investments,
+              safety nets. Saved to MongoDB in real time. Used by FIRE planner,
+              Money Health, and couple tools.
             </p>
           </div>
         </div>
@@ -162,15 +206,25 @@ export default function MoneyProfilePage() {
             }}
           >
             <div className="absolute inset-1 rounded-full bg-slate-900 flex items-center justify-center">
-              <span className="text-sm font-bold text-emerald-400">{complete.percent}%</span>
+              <span className="text-sm font-bold text-emerald-400">
+                {complete.percent}%
+              </span>
             </div>
           </div>
           <div>
-            <p className="text-xs text-slate-500 uppercase tracking-wide">Profile strength</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wide">
+              Profile strength
+            </p>
             <p className="text-sm font-medium text-white">{complete.label}</p>
             {complete.tips.map((t) => (
-              <p key={t} className="text-xs text-slate-500 mt-1 flex items-start gap-1">
-                <AlertCircle size={12} className="mt-0.5 text-amber-500 shrink-0" />
+              <p
+                key={t}
+                className="text-xs text-slate-500 mt-1 flex items-start gap-1"
+              >
+                <AlertCircle
+                  size={12}
+                  className="mt-0.5 text-amber-500 shrink-0"
+                />
                 {t}
               </p>
             ))}
@@ -203,9 +257,15 @@ export default function MoneyProfilePage() {
       <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex flex-wrap items-center gap-3">
         <Sparkles size={18} className="text-emerald-400" />
         <p className="text-sm text-slate-300 flex-1 min-w-[200px]">
-          <strong className="text-emerald-400">Investable corpus (auto):</strong>{" "}
-          {formatCurrency(investable)} — emergency + all investment buckets. Used when you tap{" "}
-          <span className="text-white font-medium">Fill from Money Profile</span> on the FIRE planner.
+          <strong className="text-emerald-400">
+            Investable corpus (auto):
+          </strong>{" "}
+          {formatCurrency(investable)} — emergency + all investment buckets.
+          Used when you tap{" "}
+          <span className="text-white font-medium">
+            Fill from Money Profile
+          </span>{" "}
+          on the FIRE planner.
         </p>
         <Link
           href="/fire-planner"
@@ -217,11 +277,14 @@ export default function MoneyProfilePage() {
 
       {/* Flash messages */}
       {error && (
-        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">{error}</div>
+        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+          {error}
+        </div>
       )}
       {savedFlash && (
         <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm flex items-center gap-2">
-          <CheckCircle2 size={16} /> Profile saved to MongoDB. FIRE planner will auto-pick this up.
+          <CheckCircle2 size={16} /> Profile saved to MongoDB. FIRE planner will
+          auto-pick this up.
         </div>
       )}
 
@@ -236,7 +299,9 @@ export default function MoneyProfilePage() {
             Employment
             <select
               value={draft.employment_type}
-              onChange={(e) => setDraft((d) => ({ ...d, employment_type: e.target.value }))}
+              onChange={(e) =>
+                setDraft((d) => ({ ...d, employment_type: e.target.value }))
+              }
               className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700/50 text-white text-sm"
             >
               <option value="salaried">Salaried</option>
@@ -254,7 +319,10 @@ export default function MoneyProfilePage() {
               onChange={(e) =>
                 setDraft((d) => ({
                   ...d,
-                  annual_income: { ...d.annual_income, gross: Number(e.target.value) },
+                  annual_income: {
+                    ...d.annual_income,
+                    gross: Number(e.target.value),
+                  },
                 }))
               }
               className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700/50 text-white text-sm"
@@ -269,7 +337,10 @@ export default function MoneyProfilePage() {
               onChange={(e) =>
                 setDraft((d) => ({
                   ...d,
-                  annual_income: { ...d.annual_income, net: Number(e.target.value) },
+                  annual_income: {
+                    ...d.annual_income,
+                    net: Number(e.target.value),
+                  },
                 }))
               }
               className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700/50 text-white text-sm"
@@ -284,7 +355,9 @@ export default function MoneyProfilePage() {
           <PiggyBank size={18} className="text-amber-400" />
           Monthly expenses
         </h2>
-        <p className="text-xs text-slate-500">Total updates automatically from the rows below.</p>
+        <p className="text-xs text-slate-500">
+          Total updates automatically from the rows below.
+        </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {EXP_KEYS.map((k) => (
             <label key={k} className="block text-xs text-slate-500 capitalize">
@@ -299,7 +372,9 @@ export default function MoneyProfilePage() {
             </label>
           ))}
         </div>
-        <p className="text-sm text-emerald-400 font-semibold">Computed monthly total: {formatCurrency(expenseSubtotal)}</p>
+        <p className="text-sm text-emerald-400 font-semibold">
+          Computed monthly total: {formatCurrency(expenseSubtotal)}
+        </p>
       </div>
 
       {/* Investments */}
@@ -310,7 +385,10 @@ export default function MoneyProfilePage() {
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {INV_KEYS.map((k) => (
-            <label key={k} className="block text-xs text-slate-500 uppercase tracking-wide">
+            <label
+              key={k}
+              className="block text-xs text-slate-500 uppercase tracking-wide"
+            >
               {k.replace(/_/g, " ")}
               <input
                 type="number"
@@ -337,7 +415,10 @@ export default function MoneyProfilePage() {
               onChange={(e) =>
                 setDraft((d) => ({
                   ...d,
-                  emergency_fund: { ...d.emergency_fund, current_amount: Number(e.target.value) },
+                  emergency_fund: {
+                    ...d.emergency_fund,
+                    current_amount: Number(e.target.value),
+                  },
                 }))
               }
               className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700/50 text-white text-sm"
@@ -353,7 +434,10 @@ export default function MoneyProfilePage() {
               onChange={(e) =>
                 setDraft((d) => ({
                   ...d,
-                  emergency_fund: { ...d.emergency_fund, months_covered: Number(e.target.value) },
+                  emergency_fund: {
+                    ...d.emergency_fund,
+                    months_covered: Number(e.target.value),
+                  },
                 }))
               }
               className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700/50 text-white text-sm"
@@ -370,7 +454,9 @@ export default function MoneyProfilePage() {
             Risk profile
             <select
               value={draft.risk_profile}
-              onChange={(e) => setDraft((d) => ({ ...d, risk_profile: e.target.value }))}
+              onChange={(e) =>
+                setDraft((d) => ({ ...d, risk_profile: e.target.value }))
+              }
               className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700/50 text-white text-sm"
             >
               <option value="conservative">Conservative</option>
@@ -383,7 +469,9 @@ export default function MoneyProfilePage() {
             Tax regime
             <select
               value={draft.tax_regime}
-              onChange={(e) => setDraft((d) => ({ ...d, tax_regime: e.target.value }))}
+              onChange={(e) =>
+                setDraft((d) => ({ ...d, tax_regime: e.target.value }))
+              }
               className="mt-1 w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700/50 text-white text-sm"
             >
               <option value="old">Old</option>
@@ -408,7 +496,10 @@ export default function MoneyProfilePage() {
                     ...d,
                     insurance: {
                       ...d.insurance,
-                      life: { ...d.insurance.life, has_cover: e.target.checked },
+                      life: {
+                        ...d.insurance.life,
+                        has_cover: e.target.checked,
+                      },
                     },
                   }))
                 }
@@ -424,7 +515,10 @@ export default function MoneyProfilePage() {
                   ...d,
                   insurance: {
                     ...d.insurance,
-                    life: { ...d.insurance.life, sum_assured: Number(e.target.value) },
+                    life: {
+                      ...d.insurance.life,
+                      sum_assured: Number(e.target.value),
+                    },
                   },
                 }))
               }
@@ -442,7 +536,10 @@ export default function MoneyProfilePage() {
                     ...d,
                     insurance: {
                       ...d.insurance,
-                      health: { ...d.insurance.health, has_cover: e.target.checked },
+                      health: {
+                        ...d.insurance.health,
+                        has_cover: e.target.checked,
+                      },
                     },
                   }))
                 }
@@ -458,7 +555,10 @@ export default function MoneyProfilePage() {
                     ...d,
                     insurance: {
                       ...d.insurance,
-                      health: { ...d.insurance.health, family_floater: e.target.checked },
+                      health: {
+                        ...d.insurance.health,
+                        family_floater: e.target.checked,
+                      },
                     },
                   }))
                 }
@@ -474,7 +574,10 @@ export default function MoneyProfilePage() {
                   ...d,
                   insurance: {
                     ...d.insurance,
-                    health: { ...d.insurance.health, sum_assured: Number(e.target.value) },
+                    health: {
+                      ...d.insurance.health,
+                      sum_assured: Number(e.target.value),
+                    },
                   },
                 }))
               }
@@ -513,11 +616,16 @@ export default function MoneyProfilePage() {
           </button>
         </div>
         {draft.debts.length === 0 && (
-          <p className="text-xs text-slate-600 italic">No debts added yet. Click "+ Add loan" above.</p>
+          <p className="text-xs text-slate-600 italic">
+            No debts added yet. Click "+ Add loan" above.
+          </p>
         )}
         <div className="space-y-4">
           {draft.debts.map((debt, i) => (
-            <div key={i} className="grid grid-cols-2 md:grid-cols-6 gap-2 p-3 rounded-xl bg-slate-900/40 border border-slate-700/30">
+            <div
+              key={i}
+              className="grid grid-cols-2 md:grid-cols-6 gap-2 p-3 rounded-xl bg-slate-900/40 border border-slate-700/30"
+            >
               <input
                 placeholder="Type"
                 value={String(debt.type ?? "")}
@@ -556,14 +664,22 @@ export default function MoneyProfilePage() {
                 value={Number(debt.interest_rate ?? 0)}
                 onChange={(e) => {
                   const next = [...draft.debts];
-                  next[i] = { ...next[i], interest_rate: Number(e.target.value) };
+                  next[i] = {
+                    ...next[i],
+                    interest_rate: Number(e.target.value),
+                  };
                   setDraft((d) => ({ ...d, debts: next }));
                 }}
                 className="px-2 py-2 rounded-lg bg-slate-800/60 border border-slate-700/50 text-white text-xs"
               />
               <button
                 type="button"
-                onClick={() => setDraft((d) => ({ ...d, debts: d.debts.filter((_, j) => j !== i) }))}
+                onClick={() =>
+                  setDraft((d) => ({
+                    ...d,
+                    debts: d.debts.filter((_, j) => j !== i),
+                  }))
+                }
                 className="text-xs text-red-400 hover:text-red-300 md:col-span-2"
               >
                 Remove

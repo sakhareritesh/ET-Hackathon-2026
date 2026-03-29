@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
           updated_at: now,
         },
       },
-      { upsert: true }
+      { upsert: true },
     );
 
     return Response.json({
@@ -44,9 +44,6 @@ export async function POST(req: NextRequest) {
       id: user._id.toString(),
     });
   } catch (err) {
-    return Response.json(
-      { detail: (err as Error).message },
-      { status: 500 }
-    );
+    return Response.json({ detail: (err as Error).message }, { status: 500 });
   }
 }

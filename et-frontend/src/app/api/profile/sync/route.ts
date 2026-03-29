@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getCollection } from "@/lib/mongodb";
+// import { getCollection } from "@/lib/mongodb";
 
 /**
  * Profile sync endpoint — no auth required.
@@ -12,7 +12,9 @@ import { getCollection } from "@/lib/mongodb";
  */
 
 function resolveUserId(raw: string | null | undefined): string {
-  return typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : "default_local_user";
+  return typeof raw === "string" && raw.trim().length > 0
+    ? raw.trim()
+    : "default_local_user";
 }
 
 export async function GET(req: NextRequest) {
@@ -33,7 +35,10 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: "db_error", detail: message }, { status: 500 });
+    return Response.json(
+      { error: "db_error", detail: message },
+      { status: 500 },
+    );
   }
 }
 
@@ -50,13 +55,17 @@ export async function POST(req: NextRequest) {
     if (existing) {
       await col.updateOne(
         { sync_user_id: userId },
-        { $set: { ...profileData, sync_user_id: userId, updated_at: now } }
+        { $set: { ...profileData, sync_user_id: userId, updated_at: now } },
       );
       return Response.json({
         ok: true,
         action: "updated",
         profile: profileData,
-        meta: { id: existing._id.toString(), sync_user_id: userId, updated_at: now },
+        meta: {
+          id: existing._id.toString(),
+          sync_user_id: userId,
+          updated_at: now,
+        },
       });
     }
 
@@ -71,10 +80,17 @@ export async function POST(req: NextRequest) {
       ok: true,
       action: "created",
       profile: profileData,
-      meta: { id: result.insertedId.toString(), sync_user_id: userId, updated_at: now },
+      meta: {
+        id: result.insertedId.toString(),
+        sync_user_id: userId,
+        updated_at: now,
+      },
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    return Response.json({ error: "db_error", detail: message }, { status: 500 });
+    return Response.json(
+      { error: "db_error", detail: message },
+      { status: 500 },
+    );
   }
 }
