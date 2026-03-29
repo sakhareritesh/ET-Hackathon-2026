@@ -25,14 +25,16 @@ export type RequestOptions = {
   headers?: Record<string, string>;
 };
 
+const DEFAULT_USER_ID = "000000000000000000000000";
+
 async function request<T>(method: string, path: string, body?: unknown, options?: RequestOptions): Promise<{ data: T }> {
   const base = getApiBaseUrl();
   const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
   const headers: Record<string, string> = { ...(options?.headers || {}) };
 
+  // Always use the default user since we are bypassing authentication and localStorage
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("access_token");
-    if (token) headers.Authorization = `Bearer ${token}`;
+    headers["x-user-id"] = DEFAULT_USER_ID;
   }
 
   let reqBody: BodyInit | undefined;
@@ -45,15 +47,6 @@ async function request<T>(method: string, path: string, body?: unknown, options?
 
   const res = await fetch(url, { method, headers, body: reqBody });
   const data = await parseResponse(res);
-
-  if (res.status === 401 && typeof window !== "undefined") {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user_id");
-    const path = window.location.pathname || "";
-    const onAuthPage = path.startsWith("/login") || path.startsWith("/register");
-    if (!onAuthPage) window.location.href = "/login";
-  }
 
   if (!res.ok) {
     const msg =

@@ -1,6 +1,10 @@
 import { create } from "zustand";
+<<<<<<< HEAD
 import { supabase } from "@/lib/supabase";
 import { LOCAL_KEYS } from "@/lib/localKeys";
+=======
+import api from "@/lib/api";
+>>>>>>> 74419c7509aaff13f4859288cca62213d40a5aee
 
 export interface FinancialProfile {
   employment_type: string;
@@ -19,6 +23,7 @@ export function getDefaultLocalProfile(): FinancialProfile {
   return {
     employment_type: "salaried",
     annual_income: { gross: 0, net: 0 },
+<<<<<<< HEAD
     monthly_expenses: {
       rent: 0, emi: 0, groceries: 0, utilities: 0,
       entertainment: 0, education: 0, other: 0, total: 0,
@@ -27,6 +32,10 @@ export function getDefaultLocalProfile(): FinancialProfile {
       ppf: 0, epf: 0, nps: 0, elss: 0, fd: 0,
       stocks: 0, mutual_funds: 0, real_estate: 0, gold: 0, crypto: 0, other: 0,
     },
+=======
+    monthly_expenses: { rent: 0, emi: 0, groceries: 0, utilities: 0, entertainment: 0, education: 0, other: 0, total: 0 },
+    existing_investments: { ppf: 0, epf: 0, nps: 0, elss: 0, fd: 0, stocks: 0, mutual_funds: 0, real_estate: 0, gold: 0, crypto: 0, other: 0 },
+>>>>>>> 74419c7509aaff13f4859288cca62213d40a5aee
     debts: [],
     insurance: {
       life: { has_cover: false, sum_assured: 0, premium: 0 },
@@ -38,6 +47,7 @@ export function getDefaultLocalProfile(): FinancialProfile {
   };
 }
 
+<<<<<<< HEAD
 async function getUserId(): Promise<string | null> {
   const { data: { session } } = await supabase.auth.getSession();
   return session?.user?.id ?? null;
@@ -51,14 +61,36 @@ function writeLocal(profile: FinancialProfile) {
 
 function readLocal(): FinancialProfile | null {
   if (typeof window === "undefined") return null;
+=======
+const DEFAULT_USER_ID = "000000000000000000000000";
+
+async function fetchFromDb(): Promise<{ connected: boolean; profile: FinancialProfile | null }> {
+>>>>>>> 74419c7509aaff13f4859288cca62213d40a5aee
   try {
-    const raw = localStorage.getItem(LOCAL_KEYS.profile);
-    return raw ? (JSON.parse(raw) as FinancialProfile) : null;
+    const res = await fetch(`/api/profile/sync?user_id=${DEFAULT_USER_ID}`);
+    if (!res.ok) return { connected: false, profile: null };
+    const json = await res.json();
+    if (json.error) return { connected: false, profile: null };
+    if (json.found && json.profile) return { connected: true, profile: json.profile as FinancialProfile };
+    // DB responded OK but no profile exists yet — still connected
+    return { connected: true, profile: null };
   } catch {
-    return null;
+    return { connected: false, profile: null };
   }
 }
 
+<<<<<<< HEAD
+=======
+async function saveToDb(profile: FinancialProfile): Promise<boolean> {
+  const res = await fetch("/api/profile/sync", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: DEFAULT_USER_ID, ...profile }),
+  });
+  return res.ok;
+}
+
+>>>>>>> 74419c7509aaff13f4859288cca62213d40a5aee
 interface ProfileState {
   profile: FinancialProfile | null;
   isLoading: boolean;
@@ -77,6 +109,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
 
   fetchProfile: async () => {
     set({ isLoading: true });
+<<<<<<< HEAD
     const userId = await getUserId();
 
     if (userId) {
@@ -128,14 +161,28 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
 
     const local = readLocal();
     set({ profile: local, isLoading: false, dbConnected: false });
+=======
+    try {
+      const { connected, profile: dbProfile } = await fetchFromDb();
+      if (dbProfile) {
+        set({ profile: dbProfile, isLoading: false, dbConnected: true, lastSyncedAt: new Date().toISOString() });
+      } else {
+        // No profile yet, but mark connection status correctly
+        set({ profile: null, isLoading: false, dbConnected: connected });
+      }
+    } catch {
+      set({ profile: null, isLoading: false, dbConnected: false });
+    }
+>>>>>>> 74419c7509aaff13f4859288cca62213d40a5aee
   },
 
   saveProfile: async (data) => {
     set({ isLoading: true });
     const existing = get().profile || getDefaultLocalProfile();
     const merged: FinancialProfile = { ...existing, ...data };
-    writeLocal(merged);
+    
     set({ profile: merged });
+<<<<<<< HEAD
 
     const userId = await getUserId();
     if (userId) {
@@ -165,11 +212,18 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
         set({ isLoading: false, dbConnected: false });
       }
     } else {
+=======
+    try {
+      const ok = await saveToDb(merged);
+      set({ isLoading: false, dbConnected: ok, lastSyncedAt: ok ? new Date().toISOString() : get().lastSyncedAt });
+    } catch {
+>>>>>>> 74419c7509aaff13f4859288cca62213d40a5aee
       set({ isLoading: false, dbConnected: false });
     }
   },
 
   saveFullProfile: async (full) => {
+<<<<<<< HEAD
     set({ isLoading: true });
     writeLocal(full);
     set({ profile: full });
@@ -200,6 +254,24 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
         set({ isLoading: false, dbConnected: false });
       }
     } else {
+=======
+    set({ isLoading: true, profile: full });
+    try {
+      const res = await fetch("/api/profile/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: DEFAULT_USER_ID, ...full }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error("Profile sync error:", err);
+        set({ isLoading: false, dbConnected: false });
+        return;
+      }
+      set({ isLoading: false, dbConnected: true, lastSyncedAt: new Date().toISOString() });
+    } catch (err) {
+      console.error("Profile sync failed:", err);
+>>>>>>> 74419c7509aaff13f4859288cca62213d40a5aee
       set({ isLoading: false, dbConnected: false });
     }
   },

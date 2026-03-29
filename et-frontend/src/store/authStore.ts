@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { supabase } from "@/lib/supabase";
 
 interface User {
   id: string;
@@ -19,76 +18,38 @@ interface AuthState {
   loadUser: () => Promise<void>;
 }
 
+const DEFAULT_USER: User = {
+  id: "000000000000000000000000",
+  email: "guest@example.com",
+  full_name: "Guest User"
+};
+
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: true,
+  user: DEFAULT_USER,
+  isAuthenticated: true,
+  isLoading: false,
 
-  login: async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data.user) throw new Error(error?.message || "Login failed");
-
-    const user: User = {
-      id: data.user.id,
-      email: data.user.email ?? email,
-      full_name: data.user.user_metadata?.full_name ?? data.user.email?.split("@")[0] ?? "User",
-      phone: data.user.user_metadata?.phone,
-      avatar_url: data.user.user_metadata?.avatar_url,
-    };
-    set({ user, isAuthenticated: true, isLoading: false });
+  login: async () => {
+    // Disabled logic because auth is bypassed
+    if (typeof window !== "undefined") window.location.href = "/dashboard";
   },
 
-  register: async (formData) => {
-    const { data, error } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.password,
-      options: {
-        data: {
-          full_name: formData.full_name,
-          phone: formData.phone,
-          city: formData.city,
-          gender: formData.gender,
-        },
-      },
-    });
-    if (error || !data.user) throw new Error(error?.message || "Registration failed");
-
-    const user: User = {
-      id: data.user.id,
-      email: data.user.email ?? formData.email,
-      full_name: formData.full_name || data.user.email?.split("@")[0] || "User",
-      phone: formData.phone,
-    };
-    set({ user, isAuthenticated: true, isLoading: false });
+  register: async () => {
+    // Disabled logic because auth is bypassed
+    if (typeof window !== "undefined") window.location.href = "/dashboard";
   },
 
   logout: () => {
-    void supabase.auth.signOut();
-    set({ user: null, isAuthenticated: false });
+    // Disabled logic because auth is bypassed
     if (typeof window !== "undefined") window.location.href = "/login";
   },
 
   loadUser: async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        set({ user: null, isAuthenticated: false, isLoading: false });
-        return;
-      }
-      const u = session.user;
-      set({
-        user: {
-          id: u.id,
-          email: u.email ?? "",
-          full_name: u.user_metadata?.full_name ?? u.email?.split("@")[0] ?? "User",
-          phone: u.user_metadata?.phone,
-          avatar_url: u.user_metadata?.avatar_url,
-        },
-        isAuthenticated: true,
-        isLoading: false,
-      });
-    } catch {
-      set({ user: null, isAuthenticated: false, isLoading: false });
-    }
+    // Automatically authenticated as guest
+    set({
+      user: DEFAULT_USER,
+      isAuthenticated: true,
+      isLoading: false,
+    });
   },
 }));

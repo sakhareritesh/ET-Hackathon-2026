@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import api from "@/lib/api";
-import { isLocalEngineMode } from "@/lib/config";
-import { computeTaxAnalysis, type TaxAnalyzePayload, type TaxAnalysisResult } from "@/lib/engine/tax";
+import { type TaxAnalyzePayload, type TaxAnalysisResult } from "@/lib/engine/tax";
 
 export interface TaxHistoryEntry {
   id: number;
@@ -25,9 +24,6 @@ interface TaxWizardState {
   saveToHistory: (income: Record<string, unknown>, deductions: Record<string, unknown>) => void;
   loadHistory: () => void;
 }
-
-const HISTORY_KEY = "tax_history";
-const MAX_HISTORY = 10;
 
 function parseCSVForm16(text: string): {
   parsed: boolean;
@@ -133,11 +129,6 @@ export const useTaxWizardStore = create<TaxWizardState>((set, get) => ({
   analyze: async (data) => {
     set({ isAnalyzing: true });
     try {
-      if (isLocalEngineMode()) {
-        const analysis = computeTaxAnalysis(data as unknown as TaxAnalyzePayload);
-        set({ analysis, isAnalyzing: false });
-        return;
-      }
       const res = await api.post<TaxAnalysisResult>("/tax/analyze", data);
       set({ analysis: res.data, isAnalyzing: false });
     } catch {
@@ -147,18 +138,14 @@ export const useTaxWizardStore = create<TaxWizardState>((set, get) => ({
   },
 
   uploadForm16: async (file) => {
-    if (isLocalEngineMode()) {
-      const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-      if (isPdf) {
-        return {
-          parsed: false,
-          message: "Local mode cannot read PDF. Use the salary fields above or upload a CSV. Download our sample CSV to see the format.",
-        };
-      }
+    // For CSV files, parse locally (no backend needed)
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdf) {
       const text = await file.text();
       const result = parseCSVForm16(text);
       return result as unknown as Record<string, unknown>;
     }
+    // For PDFs, send to backend stub
     const formData = new FormData();
     formData.append("file", file);
     const res = await api.post<Record<string, unknown>>("/tax/upload-form16", formData);
@@ -166,7 +153,7 @@ export const useTaxWizardStore = create<TaxWizardState>((set, get) => ({
   },
 
   saveToHistory: (income, deductions) => {
-    const { analysis } = get();
+    const { analysis, history } = get();
     if (!analysis) return;
     const rc = analysis.regime_comparison;
     const entry: TaxHistoryEntry = {
@@ -182,25 +169,13 @@ export const useTaxWizardStore = create<TaxWizardState>((set, get) => ({
       analysis,
     };
 
-    try {
-      const raw = localStorage.getItem(HISTORY_KEY);
-      const existing: TaxHistoryEntry[] = raw ? JSON.parse(raw) : [];
-      const updated = [entry, ...existing].slice(0, MAX_HISTORY);
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
-      set({ history: updated });
-    } catch {
-      // localStorage unavailable
-    }
+    // Keep history in Zustand state (persisted to MongoDB via tax_records in analyze)
+    const updated = [entry, ...history].slice(0, 10);
+    set({ history: updated });
   },
 
   loadHistory: () => {
-    try {
-      const raw = localStorage.getItem(HISTORY_KEY);
-      if (raw) {
-        set({ history: JSON.parse(raw) });
-      }
-    } catch {
-      // localStorage unavailable
-    }
+    // History is now derived from the last analysis in Zustand state.
+    // No localStorage needed.
   },
 }));

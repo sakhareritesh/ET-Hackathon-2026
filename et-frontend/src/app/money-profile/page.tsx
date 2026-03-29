@@ -421,8 +421,8 @@ export default function MoneyProfilePage() {
   };
 
   const syncLabel = dbConnected
-    ? `Synced to database${lastSyncedAt ? ` · ${new Date(lastSyncedAt).toLocaleTimeString()}` : ""}`
-    : "Offline — saving to browser only";
+    ? `Synced to MongoDB${lastSyncedAt ? ` · ${new Date(lastSyncedAt).toLocaleTimeString()}` : ""}`
+    : "Connecting to database…";
 
   if (!hydrated) {
     return (

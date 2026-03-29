@@ -5,16 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Users, Loader2, Sparkles, Home, TrendingUp, Shield, Wallet, PieChart, Landmark, ArrowRightLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import api from "@/lib/api";
-import { callAI } from "@/lib/ai-proxy";
-import { isLocalEngineMode } from "@/lib/config";
-import {
-  computeCouplesPlannerOptimization,
-  type CouplesPartnerFields,
-  type CouplesPlannerOptimization,
-} from "@/lib/engine/couples";
-import { formatCurrency, cn } from "@/lib/utils";
-import AnimatedCounter from "@/components/shared/AnimatedCounter";
-import AlgorithmExplanation from "@/components/shared/AlgorithmExplanation";
+import { formatCurrency } from "@/lib/utils";
+import { Users, Send, Sparkles, Heart, TrendingUp, Shield, Wallet } from "lucide-react";
 
 const defaultA: CouplesPartnerFields = {
   name: "Partner A",
@@ -88,44 +80,38 @@ function RupeeInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
 
 export default function CouplesPlannerPage() {
   useAuth();
-  const localMode = isLocalEngineMode();
-  const [a, setA] = useState<CouplesPartnerFields>(defaultA);
-  const [b, setB] = useState<CouplesPartnerFields>(defaultB);
-  const [monthlyRent, setMonthlyRent] = useState(35000);
-  const [result, setResult] = useState<CouplesPlannerOptimization | null>(null);
+  const [partnerEmail, setPartnerEmail] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
+  const [data, setData] = useState<CoupleData | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const optimize = useCallback(async () => {
+  const sendInvite = async () => {
+    try {
+      const res = await api.post<{ invite_code: string }>("/couples/invite", { partner_email: partnerEmail });
+      setInviteCode(res.data.invite_code);
+    } catch {
+      /* silent */
+    }
+  };
+
+  const acceptInvite = async () => {
+    try {
+      await api.post("/couples/accept", { invite_code: inviteCode });
+      await fetchOptimizations();
+    } catch {
+      /* silent */
+    }
+  };
+
+  const fetchOptimizations = async () => {
     setLoading(true);
     const local = computeCouplesPlannerOptimization(a, b, monthlyRent);
     try {
-      if (localMode) {
-        setResult(local);
-        return;
-      }
-      try {
-        const ai = await callAI<CouplesPlannerOptimization>("/ai/couples/optimize", {
-          partner_a: a,
-          partner_b: b,
-          monthly_rent: monthlyRent,
-        });
-        if (ai && typeof ai.combined_optimal_tax === "number") {
-          setResult(ai);
-          return;
-        }
-      } catch {
-        /* API fallback */
-      }
-      try {
-        const res = await api.post<CouplesPlannerOptimization>("/couples/planner/optimize", {
-          partner_a: a,
-          partner_b: b,
-          monthly_rent: monthlyRent,
-        });
-        setResult(res.data);
-      } catch {
-        setResult(local);
-      }
+      const res = await api.get<CoupleData>("/couples/optimize");
+      setData(res.data);
+      setTab("results");
+    } catch {
+      /* silent */
     } finally {
       setLoading(false);
     }
@@ -187,9 +173,9 @@ export default function CouplesPlannerPage() {
           <Users className="h-7 w-7 text-cyan-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Couples Planner</h1>
-          <p className="text-sm text-slate-400">
-            Joint inputs for rent, HRA, 80C, and tax regime comparison. Illustrative model; verify with a tax professional.
+          <h1 className="text-2xl font-bold text-white">Couple&apos;s Money Planner</h1>
+          <p className="text-sm text-slate-500">
+            Joint planning with HRA, insurance, and net worth
           </p>
         </div>
       </motion.div>
@@ -219,86 +205,38 @@ export default function CouplesPlannerPage() {
         </button>
       </div>
 
-      {/* Partner setup */}
-      <section className="rounded-2xl border border-slate-700/50 bg-slate-800/50 p-6 shadow-xl backdrop-blur-md">
-        <h2 className="mb-6 text-lg font-semibold text-white">Partner setup</h2>
-        <div className="grid gap-8 lg:grid-cols-2">
-          {(
-            [
-              { key: "a" as const, label: "Partner A", data: a, set: setA },
-              { key: "b" as const, label: "Partner B", data: b, set: setB },
-            ] as const
-          ).map(({ key, label, data, set }) => (
-            <div key={key} className="space-y-3 rounded-xl border border-slate-700/40 bg-slate-900/30 p-4">
-              <p className="text-sm font-semibold text-emerald-400/90">{label}</p>
-              <Field label="Name">
-                <input
-                  type="text"
-                  value={data.name}
-                  onChange={(e) => set((d) => ({ ...d, name: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-700/50 bg-slate-900/60 px-3 py-2.5 text-sm text-white focus:border-emerald-500/50 focus:outline-none"
-                />
-              </Field>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Gross salary (annual)">
-                  <RupeeInput
-                    type="number"
-                    min={0}
-                    value={data.gross_salary || ""}
-                    onChange={(e) => set((d) => ({ ...d, gross_salary: Number(e.target.value) }))}
-                  />
-                </Field>
-                <Field label="Basic salary (annual)">
-                  <RupeeInput
-                    type="number"
-                    min={0}
-                    value={data.basic_salary || ""}
-                    onChange={(e) => set((d) => ({ ...d, basic_salary: Number(e.target.value) }))}
-                  />
-                </Field>
-                <Field label="HRA received (annual)">
-                  <RupeeInput
-                    type="number"
-                    min={0}
-                    value={data.hra_received || ""}
-                    onChange={(e) => set((d) => ({ ...d, hra_received: Number(e.target.value) }))}
-                  />
-                </Field>
-                <Field label="Section 80C (annual)">
-                  <RupeeInput
-                    type="number"
-                    min={0}
-                    value={data.sec_80c || ""}
-                    onChange={(e) => set((d) => ({ ...d, sec_80c: Number(e.target.value) }))}
-                  />
-                </Field>
-                <Field label="Total investments">
-                  <RupeeInput
-                    type="number"
-                    min={0}
-                    value={data.total_investments || ""}
-                    onChange={(e) => set((d) => ({ ...d, total_investments: Number(e.target.value) }))}
-                  />
-                </Field>
-                <Field label="Total debts">
-                  <RupeeInput
-                    type="number"
-                    min={0}
-                    value={data.total_debts || ""}
-                    onChange={(e) => set((d) => ({ ...d, total_debts: Number(e.target.value) }))}
-                  />
-                </Field>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-6 max-w-md">
-          <Field label="Monthly rent (shared)">
-            <RupeeInput
-              type="number"
-              min={0}
-              value={monthlyRent || ""}
-              onChange={(e) => setMonthlyRent(Number(e.target.value))}
+      <div className="flex gap-2 flex-wrap">
+        {(
+          [
+            { key: "invite" as const, label: "Invite Partner" },
+            { key: "accept" as const, label: "Accept Invite" },
+            { key: "results" as const, label: "Optimization Results" },
+          ] as const
+        ).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
+              ${tab === t.key ? "bg-violet-500/20 text-violet-400 border border-violet-500/30" : "text-slate-500 hover:text-white"}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "invite" && (
+        <div className="p-6 rounded-2xl bg-slate-800/40 border border-slate-700/50 space-y-4">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <Heart size={18} className="text-pink-400" /> Invite Your Partner
+          </h3>
+            Your partner needs an account to link profiles together.
+          <div className="flex gap-3 flex-wrap">
+            <input
+              type="email"
+              value={partnerEmail}
+              onChange={(e) => setPartnerEmail(e.target.value)}
+              placeholder="partner@example.com"
+              className="flex-1 min-w-[200px] px-4 py-2.5 rounded-xl bg-slate-900/60 border border-slate-700/50 text-white text-sm focus:outline-none focus:border-violet-500/50"
             />
           </Field>
         </div>
